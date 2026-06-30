@@ -9194,12 +9194,12 @@ function hideNotificationChannelForm() {
 }
 
 function defaultNotificationBodyTemplate() {
-    return '{\n' +
-        '  "msgtype": "text",\n' +
-        '  "text": {\n' +
-        '    "content": "#MESSAGE#\\n服务器：#SERVER.NAME#\\nIP：#SERVER.IP#\\n时间：#DATETIME#"\n' +
-        '  }\n' +
-        '}';
+    return JSON.stringify({
+        msgtype: 'text',
+        text: {
+            content: '#MESSAGE#\\n????#SERVER.NAME#\\nIP?#SERVER.IP#\\n???#DATETIME#'
+        }
+    }, null, 2);
 }
 function editNotificationChannel(channelId) {
     const channel = notificationChannels.find(item => item.id === channelId);
