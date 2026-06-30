@@ -3669,8 +3669,8 @@ async function handleInstallScript(request, url, env) {
 API_KEY=""
 SERVER_ID=""
 WORKER_URL="${baseUrl}"
-INSTALL_DIR="/opt/vps-monitor"
-SERVICE_NAME="vps-monitor"
+INSTALL_DIR="/opt/bread-probe-agent"
+SERVICE_NAME="bread-probe-agent"
 
 # 解析参数
 while [[ $# -gt 0 ]]; do
@@ -3864,7 +3864,7 @@ chmod +x "$INSTALL_DIR/monitor.sh"
 # 创建systemd服务
 cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF
 [Unit]
-Description=VPS Monitor Service
+Description=Bread Probe Agent Service
 After=network.target
 
 [Service]
@@ -3892,7 +3892,7 @@ echo "查看服务日志: journalctl -u $SERVICE_NAME -f"
   return new Response(script, {
     headers: {
       'Content-Type': 'text/plain',
-      'Content-Disposition': 'attachment; filename="install.sh"'
+      'Content-Disposition': 'attachment; filename="bread-probe-agent.sh"'
     }
   });
 }
@@ -9229,9 +9229,9 @@ async function copyVpsInstallScript(serverId, serverName, buttonElement) {
         const workerUrl = window.location.origin;
 
         // 使用GitHub上的脚本地址
-        const baseScriptUrl = "https://raw.githubusercontent.com/hhbread/bread-cloudflare-probe/main/cf-vps-monitor.sh";
+        const baseScriptUrl = "https://raw.githubusercontent.com/hhbread/bread-cloudflare-probe/main/bread-probe-agent.sh";
         // 生成安装命令（让脚本自动从服务器获取上报间隔）
-        const scriptCommand = 'wget ' + baseScriptUrl + ' -O cf-vps-monitor.sh && chmod +x cf-vps-monitor.sh && ./cf-vps-monitor.sh -i -k ' + apiKey + ' -s ' + serverId + ' -u ' + workerUrl;
+        const scriptCommand = 'wget ' + baseScriptUrl + ' -O bread-probe-agent.sh && chmod +x bread-probe-agent.sh && ./bread-probe-agent.sh -i -k ' + apiKey + ' -s ' + serverId + ' -u ' + workerUrl;
 
         await navigator.clipboard.writeText(scriptCommand);
 

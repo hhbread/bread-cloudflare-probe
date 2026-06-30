@@ -115,11 +115,11 @@ Webhook templates support:
 
 ## Status
 
-This project is in early development. The first goal is to make Cloudflare-native deployment and VPS monitoring simple and reliable.
+This project is in early development. The first goal is to make Cloudflare-native deployment and server monitoring simple and reliable.
 
 ## Credits
 
-This project is based on [kadidalax/cf-vps-monitor](https://github.com/kadidalax/cf-vps-monitor). Many thanks to the original author for the Cloudflare Workers + D1 VPS monitoring foundation and deployment approach.
+This project is based on [kadidalax/cf-vps-monitor](https://github.com/kadidalax/cf-vps-monitor). Many thanks to the original author for the Cloudflare Workers + D1 monitoring foundation and deployment approach.
 
 ## License
 

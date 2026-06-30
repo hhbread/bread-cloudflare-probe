@@ -137,10 +137,10 @@ systemd服务创建完成
 
 ```bash
 systemctl daemon-reload
-systemctl enable cf-vps-monitor
-systemctl start cf-vps-monitor
-systemctl status cf-vps-monitor --no-pager
-journalctl -u cf-vps-monitor -n 50 --no-pager
+systemctl enable bread-probe-agent
+systemctl start bread-probe-agent
+systemctl status bread-probe-agent --no-pager
+journalctl -u bread-probe-agent -n 50 --no-pager
 ```
 
 服务正常时应看到：
@@ -174,6 +174,24 @@ record_installation "crontab" "${USER:-$(id -un 2>/dev/null || echo root)}" "add
 ```
 
 ## 已加入的二开功能
+
+### 面包探针 Agent 命名
+
+新版安装脚本命名为：
+
+```text
+bread-probe-agent.sh
+```
+
+新版 Agent 默认使用：
+
+```text
+服务名: bread-probe-agent.service
+安装目录: ~/.bread-probe
+GitHub Raw 地址: https://raw.githubusercontent.com/hhbread/bread-cloudflare-probe/main/bread-probe-agent.sh
+```
+
+面板中的“复制脚本”按钮会生成新版安装命令。旧的 `cf-vps-monitor.sh` 暂时保留，用于旧 Agent 卸载和兼容回滚。
 
 ### 面包探针 UI 基础版
 
