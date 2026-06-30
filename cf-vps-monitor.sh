@@ -2500,7 +2500,7 @@ setup_crontab_autostart() {
     # 添加新条目（减少临时文件操作）
     if (echo "$current_crontab"; echo "$crontab_entry") | crontab - 2>/dev/null; then
         # 记录到安装清单
-        record_installation "crontab" "$USER" "add" "$backup_file"
+        record_installation "crontab" "${USER:-$(id -un 2>/dev/null || echo root)}" "add" "$backup_file"
         print_message "$GREEN" "✓ crontab自启动已配置"
         return 0
     else

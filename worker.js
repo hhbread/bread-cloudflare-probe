@@ -1,4 +1,4 @@
-// VPS监控面板 - Cloudflare Worker解决方案
+﻿// VPS监控面板 - Cloudflare Worker解决方案
 // 版本: 1.1.0
 // ==================== 配置常量 ====================
 
@@ -879,6 +879,21 @@ const D1_SCHEMAS = {
     );
     INSERT OR IGNORE INTO telegram_config (id, bot_token, chat_id, enable_notifications, updated_at) VALUES (1, NULL, NULL, 0, NULL);`,
 
+  notification_channels: `
+    CREATE TABLE IF NOT EXISTS notification_channels (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      method TEXT DEFAULT 'POST',
+      content_type TEXT DEFAULT 'JSON',
+      headers TEXT,
+      body_template TEXT,
+      verify_tls INTEGER DEFAULT 1,
+      enabled INTEGER DEFAULT 1,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER
+    );`,
+
   app_config: `
     CREATE TABLE IF NOT EXISTS app_config (
       key TEXT PRIMARY KEY,
@@ -917,7 +932,8 @@ async function applySchemaAlterations(db) {
     "ALTER TABLE admin_credentials ADD COLUMN must_change_password INTEGER DEFAULT 0",
     "ALTER TABLE admin_credentials ADD COLUMN password_changed_at INTEGER DEFAULT NULL",
     "ALTER TABLE servers ADD COLUMN is_public INTEGER DEFAULT 1",
-    "ALTER TABLE monitored_sites ADD COLUMN is_public INTEGER DEFAULT 1"
+    "ALTER TABLE monitored_sites ADD COLUMN is_public INTEGER DEFAULT 1",
+    D1_SCHEMAS.notification_channels
   ];
 
   for (const alterSql of alterStatements) {
@@ -1624,7 +1640,7 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
       const { serverId, serverName } = await request.json();
 
       // 检查是否已发送过离线通知
-      const server = await env.DB.prepare('SELECT last_notified_down_at FROM servers WHERE id = ?').bind(serverId).first();
+      const server = await env.DB.prepare('SELECT name, description, last_notified_down_at FROM servers WHERE id = ?').bind(serverId).first();
       if (server?.last_notified_down_at) {
         return createApiResponse({ success: true, message: 'Already notified' }, 200, corsHeaders);
       }
@@ -1634,7 +1650,13 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
       // 记录离线时间并发送通知
       await env.DB.prepare('UPDATE servers SET last_notified_down_at = ? WHERE id = ?')
         .bind(Math.floor(Date.now() / 1000), serverId).run();
-      ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message, 'high'));
+      ctx.waitUntil(sendNotification(env.DB, message, {
+        type: 'vps',
+        status: 'offline',
+        serverId,
+        serverName: server?.name || serverName,
+        serverIp: server?.description || ''
+      }, 'high'));
 
       return createApiResponse({ success: true }, 200, corsHeaders);
     } catch (error) {
@@ -1645,6 +1667,7 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
   if (path === '/api/notify/recovery' && method === 'POST') {
     try {
       const { serverId, serverName } = await request.json();
+      const server = await env.DB.prepare('SELECT name, description FROM servers WHERE id = ?').bind(serverId).first();
       const message = `✅ VPS恢复: 服务器 *${serverName}* 已恢复在线`;
 
       // 清除离线记录
@@ -1652,7 +1675,13 @@ async function handleVpsRoutes(path, method, request, env, corsHeaders, ctx) {
         .bind(serverId).run();
 
       // 发送通知
-      ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message, 'high'));
+      ctx.waitUntil(sendNotification(env.DB, message, {
+        type: 'vps',
+        status: 'recovery',
+        serverId,
+        serverName: server?.name || serverName,
+        serverIp: server?.description || ''
+      }, 'high'));
 
       return createApiResponse({ success: true }, 200, corsHeaders);
     } catch (error) {
@@ -2746,9 +2775,9 @@ async function handleApiRequest(request, env, ctx) {
       if (enableNotifValue === 1 && bot_token && chat_id) {
         const testMessage = "✅ Telegram通知已在此监控面板激活。这是一条测试消息。";
         if (ctx?.waitUntil) {
-          ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, testMessage, 'high'));
+          ctx.waitUntil(sendNotification(env.DB, testMessage, { type: 'test', status: 'test' }, 'high'));
         } else {
-                    sendTelegramNotificationOptimized(env.DB, testMessage, 'high').catch(e => {
+                    sendNotification(env.DB, testMessage, { type: 'test', status: 'test' }, 'high').catch(e => {
             // 静默处理测试通知错误
           });
         }
@@ -2771,6 +2800,157 @@ async function handleApiRequest(request, env, ctx) {
   // ==================== 背景设置API ====================
 
   // 获取背景设置（公开API - 所有用户可访问）
+  if (path === '/api/admin/notification-channels' && method === 'GET') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', message: '需要管理员权限' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      await env.DB.exec(D1_SCHEMAS.notification_channels);
+      const { results } = await env.DB.prepare(`
+        SELECT id, name, url, method, content_type, headers, body_template, verify_tls, enabled, created_at, updated_at
+        FROM notification_channels
+        ORDER BY created_at DESC
+      `).all();
+      return new Response(JSON.stringify(results || []), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Internal server error', message: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  if (path === '/api/admin/notification-channels' && method === 'POST') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', message: '需要管理员权限' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      await env.DB.exec(D1_SCHEMAS.notification_channels);
+      const payload = await request.json();
+      const id = payload.id || crypto.randomUUID();
+      const now = Math.floor(Date.now() / 1000);
+      const methodValue = String(payload.method || 'POST').toUpperCase();
+      const contentTypeValue = String(payload.content_type || 'JSON').toUpperCase();
+
+      if (!payload.name || !payload.url) {
+        return createErrorResponse('Invalid notification channel', '名称和 URL 不能为空', 400, corsHeaders);
+      }
+      if (!['GET', 'POST', 'PUT', 'PATCH'].includes(methodValue)) {
+        return createErrorResponse('Invalid method', '请求方式只支持 GET、POST、PUT、PATCH', 400, corsHeaders);
+      }
+      if (!['JSON', 'FORM', 'TEXT'].includes(contentTypeValue)) {
+        return createErrorResponse('Invalid content type', '类型只支持 JSON、FORM、TEXT', 400, corsHeaders);
+      }
+
+      await env.DB.prepare(`
+        INSERT INTO notification_channels (
+          id, name, url, method, content_type, headers, body_template, verify_tls, enabled, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          url = excluded.url,
+          method = excluded.method,
+          content_type = excluded.content_type,
+          headers = excluded.headers,
+          body_template = excluded.body_template,
+          verify_tls = excluded.verify_tls,
+          enabled = excluded.enabled,
+          updated_at = excluded.updated_at
+      `).bind(
+        id,
+        payload.name.trim(),
+        payload.url.trim(),
+        methodValue,
+        contentTypeValue,
+        payload.headers || '',
+        payload.body_template || '',
+        payload.verify_tls === false || payload.verify_tls === 0 ? 0 : 1,
+        payload.enabled === false || payload.enabled === 0 ? 0 : 1,
+        payload.created_at || now,
+        now
+      ).run();
+
+      if (payload.send_test !== false) {
+        ctx.waitUntil(sendWebhookNotification(env.DB, '✅ Webhook 通知测试成功', {
+          type: 'test',
+          status: 'test',
+          channelId: id
+        }, 'high'));
+      }
+
+      return new Response(JSON.stringify({ success: true, id }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Internal server error', message: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  if (path.startsWith('/api/admin/notification-channels/') && method === 'DELETE') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', message: '需要管理员权限' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      const channelId = decodeURIComponent(path.split('/').pop());
+      await env.DB.prepare('DELETE FROM notification_channels WHERE id = ?').bind(channelId).run();
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Internal server error', message: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
+  if (path === '/api/admin/notification-channels/test' && method === 'POST') {
+    const user = await authenticateRequest(request, env);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized', message: '需要管理员权限' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+
+    try {
+      const { id } = await request.json();
+      await sendWebhookNotification(env.DB, '✅ Webhook 通知测试成功', {
+        type: 'test',
+        status: 'test',
+        channelId: id || null
+      }, 'high');
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Internal server error', message: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
+  }
+
   if (path === '/api/background-settings' && method === 'GET') {
     try {
       // 查询三个背景配置项
@@ -3011,7 +3191,12 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
     if (isFirstTimeDown) {
       // Site just went down
       const message = `🔴 网站故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
-      ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+      ctx.waitUntil(sendNotification(db, message, {
+        type: 'site',
+        status: newStatus,
+        siteName: siteDisplayName,
+        siteUrl: url
+      }));
       newSiteLastNotifiedDownAt = checkTime;
 
     } else {
@@ -3019,14 +3204,24 @@ async function checkWebsiteStatus(site, db, ctx) { // Added ctx for waitUntil
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
         const message = `🔴 网站持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
-        ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+        ctx.waitUntil(sendNotification(db, message, {
+          type: 'site',
+          status: newStatus,
+          siteName: siteDisplayName,
+          siteUrl: url
+        }));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
     // Site just came back up
     const message = `✅ 网站恢复: *${siteDisplayName}* 已恢复在线!\n网址: ${url}`;
-    ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+    ctx.waitUntil(sendNotification(db, message, {
+      type: 'site',
+      status: 'recovery',
+      siteName: siteDisplayName,
+      siteUrl: url
+    }));
     newSiteLastNotifiedDownAt = null; // Clear notification timestamp as site is up
   }
 
@@ -3111,19 +3306,34 @@ async function checkWebsiteStatusOptimized(site, db, ctx) {
     const isFirstTimeDown = !['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus);
     if (isFirstTimeDown) {
       const message = `🔴 网站故障: *${siteDisplayName}* 当前状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
-      ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+      ctx.waitUntil(sendNotification(db, message, {
+        type: 'site',
+        status: newStatus,
+        siteName: siteDisplayName,
+        siteUrl: url
+      }));
       newSiteLastNotifiedDownAt = checkTime;
     } else {
       const shouldResend = siteLastNotifiedDownAt === null || (checkTime - siteLastNotifiedDownAt > NOTIFICATION_INTERVAL_SECONDS);
       if (shouldResend) {
         const message = `🔴 网站持续故障: *${siteDisplayName}* 状态 ${newStatus.toLowerCase()} (状态码: ${newStatusCode || '无'}).\n网址: ${url}`;
-        ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+        ctx.waitUntil(sendNotification(db, message, {
+          type: 'site',
+          status: newStatus,
+          siteName: siteDisplayName,
+          siteUrl: url
+        }));
         newSiteLastNotifiedDownAt = checkTime;
       }
     }
   } else if (newStatus === 'UP' && ['DOWN', 'TIMEOUT', 'ERROR'].includes(previousStatus)) {
     const message = `✅ 网站恢复: *${siteDisplayName}* 已恢复在线!\n网址: ${url}`;
-    ctx.waitUntil(sendTelegramNotificationOptimized(db, message));
+    ctx.waitUntil(sendNotification(db, message, {
+      type: 'site',
+      status: 'recovery',
+      siteName: siteDisplayName,
+      siteUrl: url
+    }));
     newSiteLastNotifiedDownAt = null;
   }
 
@@ -3155,7 +3365,7 @@ async function checkVpsOfflineReminder(env, ctx) {
 
     // 查询持续离线的VPS（已有离线记录且仍然离线）
     const { results: offlineServers } = await env.DB.prepare(`
-      SELECT s.id, s.name, s.last_notified_down_at, m.timestamp as last_report
+      SELECT s.id, s.name, s.description, s.last_notified_down_at, m.timestamp as last_report
       FROM servers s
       LEFT JOIN metrics m ON s.id = m.server_id
       WHERE s.last_notified_down_at IS NOT NULL
@@ -3168,7 +3378,13 @@ async function checkVpsOfflineReminder(env, ctx) {
       const offlineHours = Math.floor((currentTime - server.last_notified_down_at) / 3600);
 
       const message = `🔴 VPS持续离线: 服务器 *${serverDisplayName}* 已离线${offlineHours}小时（每小时提醒）`;
-      ctx.waitUntil(sendTelegramNotificationOptimized(env.DB, message));
+      ctx.waitUntil(sendNotification(env.DB, message, {
+        type: 'vps',
+        status: 'offline_reminder',
+        serverId: server.id,
+        serverName: serverDisplayName,
+        serverIp: server.description || ''
+      }));
 
       // 更新最后通知时间
       ctx.waitUntil(env.DB.prepare('UPDATE servers SET last_notified_down_at = ? WHERE id = ?')
@@ -3181,6 +3397,103 @@ async function checkVpsOfflineReminder(env, ctx) {
 }
 
 // 简化版Telegram通知 - 直接发送
+async function sendNotification(db, message, context = {}, priority = 'normal') {
+  await Promise.allSettled([
+    sendTelegramNotificationOptimized(db, message, priority),
+    sendWebhookNotification(db, message, context, priority)
+  ]);
+}
+
+async function sendWebhookNotification(db, message, context = {}, priority = 'normal') {
+  try {
+    await db.exec(D1_SCHEMAS.notification_channels);
+    const channelId = context.channelId || null;
+    const query = channelId
+      ? 'SELECT * FROM notification_channels WHERE enabled = 1 AND id = ?'
+      : 'SELECT * FROM notification_channels WHERE enabled = 1';
+    const statement = db.prepare(query);
+    const { results } = channelId
+      ? await statement.bind(channelId).all()
+      : await statement.all();
+
+    if (!results?.length) return;
+
+    await Promise.allSettled(results.map(channel => sendSingleWebhookChannel(channel, message, context, priority)));
+  } catch (error) {
+    // 静默处理 Webhook 通知错误
+  }
+}
+
+async function sendSingleWebhookChannel(channel, message, context = {}, priority = 'normal') {
+  try {
+    const method = String(channel.method || 'POST').toUpperCase();
+    const contentType = String(channel.content_type || 'JSON').toUpperCase();
+    const headers = parseNotificationHeaders(channel.headers);
+    const bodyTemplate = channel.body_template || defaultWebhookBodyTemplate();
+    const values = buildNotificationTemplateValues(message, context, priority);
+    const url = replaceNotificationTemplate(channel.url, values);
+    const bodyText = replaceNotificationTemplate(bodyTemplate, values);
+
+    if (contentType === 'JSON') {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    } else if (contentType === 'FORM') {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/x-www-form-urlencoded';
+    } else {
+      headers['Content-Type'] = headers['Content-Type'] || 'text/plain; charset=utf-8';
+    }
+
+    const init = { method, headers };
+    if (method !== 'GET') {
+      init.body = bodyText;
+    }
+
+    await fetch(url, init);
+  } catch (error) {
+    // 单个通道失败不影响其他通知
+  }
+}
+
+function parseNotificationHeaders(headersText) {
+  if (!headersText || !headersText.trim()) return {};
+  try {
+    const parsed = JSON.parse(headersText);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    return {};
+  }
+}
+
+function defaultWebhookBodyTemplate() {
+  return JSON.stringify({ text: '#MESSAGE#' });
+}
+
+function buildNotificationTemplateValues(message, context = {}, priority = 'normal') {
+  const now = new Date();
+  return {
+    '#NEZHA#': 'Cloudflare VPS Monitor',
+    '#MESSAGE#': message,
+    '#DATETIME#': now.toISOString(),
+    '#DATE#': now.toISOString().slice(0, 10),
+    '#TIME#': now.toISOString().slice(11, 19),
+    '#PRIORITY#': priority,
+    '#STATUS#': context.status || '',
+    '#TYPE#': context.type || '',
+    '#SERVER.ID#': context.serverId || '',
+    '#SERVER.NAME#': context.serverName || '',
+    '#SERVER.IP#': context.serverIp || '',
+    '#SITE.NAME#': context.siteName || '',
+    '#SITE.URL#': context.siteUrl || ''
+  };
+}
+
+function replaceNotificationTemplate(template, values) {
+  let output = String(template || '');
+  for (const [key, value] of Object.entries(values)) {
+    output = output.split(key).join(String(value ?? ''));
+  }
+  return output;
+}
+
 async function sendTelegramNotificationOptimized(db, message, priority = 'normal') {
   try {
     const telegramConfig = await configCache.getTelegramConfig(db);
@@ -4639,6 +4952,94 @@ function getAdminHtml() {
                         </div>
                         <button type="button" id="saveTelegramSettingsBtn" class="btn btn-info">保存Telegram设置</button>
                     </form>
+
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Webhook 通知通道</h6>
+                            <button type="button" id="addNotificationChannelBtn" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i>添加通道
+                            </button>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>名称</th>
+                                        <th>请求方式</th>
+                                        <th>类型</th>
+                                        <th>启用</th>
+                                        <th class="text-end">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="notificationChannelsBody">
+                                    <tr>
+                                        <td colspan="5" class="text-muted text-center py-3">暂无 Webhook 通知通道</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <form id="notificationChannelForm" class="border rounded p-3 d-none">
+                            <input type="hidden" id="notificationChannelId">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="notificationChannelName" class="form-label">名称</label>
+                                    <input type="text" class="form-control" id="notificationChannelName" placeholder="例如：掉线了企业微信">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="notificationChannelUrl" class="form-label">URL</label>
+                                    <input type="text" class="form-control" id="notificationChannelUrl" placeholder="https://example.com/webhook">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="notificationChannelMethod" class="form-label">请求方式</label>
+                                    <select class="form-select" id="notificationChannelMethod">
+                                        <option value="POST">POST</option>
+                                        <option value="GET">GET</option>
+                                        <option value="PUT">PUT</option>
+                                        <option value="PATCH">PATCH</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="notificationChannelType" class="form-label">类型</label>
+                                    <select class="form-select" id="notificationChannelType">
+                                        <option value="JSON">JSON</option>
+                                        <option value="FORM">FORM</option>
+                                        <option value="TEXT">TEXT</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 d-flex align-items-end">
+                                    <div class="form-check me-3">
+                                        <input class="form-check-input" type="checkbox" id="notificationChannelEnabled" checked>
+                                        <label class="form-check-label" for="notificationChannelEnabled">启用</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="notificationVerifyTls" checked>
+                                        <label class="form-check-label" for="notificationVerifyTls">验证 TLS</label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label for="notificationHeaders" class="form-label">请求头</label>
+                                    <textarea class="form-control" id="notificationHeaders" rows="2" placeholder='{"User-Agent":"Cloudflare-VPS-Monitor"}'></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label for="notificationBodyTemplate" class="form-label">请求体</label>
+                                    <textarea class="form-control font-monospace" id="notificationBodyTemplate" rows="7" placeholder='{"text":"#MESSAGE#"}'></textarea>
+                                    <div class="form-text">可用变量：#MESSAGE#、#SERVER.NAME#、#SERVER.IP#、#SITE.NAME#、#SITE.URL#、#STATUS#、#DATETIME#</div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="notificationSkipTest">
+                                        <label class="form-check-label" for="notificationSkipTest">不发送测试消息</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 d-flex gap-2">
+                                    <button type="button" id="saveNotificationChannelBtn" class="btn btn-info">保存通道</button>
+                                    <button type="button" id="cancelNotificationChannelBtn" class="btn btn-outline-secondary">取消</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- 分隔线 -->
@@ -7972,6 +8373,7 @@ let currentServerId = null;
 let currentSiteId = null; // For site deletion
 let serverList = [];
 let siteList = []; // For monitored sites
+let notificationChannels = [];
 let hasAddedNewServer = false; // 标记是否添加了新服务器
 
 // 页面加载完成后执行
@@ -7997,6 +8399,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     loadSiteList();
     // 加载Telegram设置
     loadTelegramSettings();
+    loadNotificationChannels();
     // 加载背景设置
     loadBackgroundSettings();
     // 加载全局设置 (VPS Report Interval) - will use serverAlert for notifications
@@ -8166,6 +8569,18 @@ function initEventListeners() {
     // 保存Telegram设置按钮
     document.getElementById('saveTelegramSettingsBtn').addEventListener('click', function() {
         saveTelegramSettings();
+    });
+
+    document.getElementById('addNotificationChannelBtn').addEventListener('click', function() {
+        showNotificationChannelForm();
+    });
+
+    document.getElementById('saveNotificationChannelBtn').addEventListener('click', function() {
+        saveNotificationChannel();
+    });
+
+    document.getElementById('cancelNotificationChannelBtn').addEventListener('click', function() {
+        hideNotificationChannelForm();
     });
 
     // Background Settings Event Listeners
@@ -9479,6 +9894,153 @@ async function saveTelegramSettings() {
     }
 }
 
+async function loadNotificationChannels() {
+    try {
+        notificationChannels = await apiRequest('/api/admin/notification-channels') || [];
+        renderNotificationChannels();
+    } catch (error) {
+        showToast('danger', '加载 Webhook 通知通道失败: ' + error.message);
+    }
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderNotificationChannels() {
+    const tbody = document.getElementById('notificationChannelsBody');
+    if (!tbody) return;
+
+    if (!notificationChannels.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted text-center py-3">暂无 Webhook 通知通道</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = notificationChannels.map(channel => {
+        const channelId = escapeHtml(channel.id || '');
+        return '<tr>' +
+            '<td>' + escapeHtml(channel.name || '-') + '</td>' +
+            '<td>' + escapeHtml(channel.method || 'POST') + '</td>' +
+            '<td>' + escapeHtml(channel.content_type || 'JSON') + '</td>' +
+            '<td>' + (channel.enabled ? '<span class="badge bg-success">启用</span>' : '<span class="badge bg-secondary">停用</span>') + '</td>' +
+            '<td class="text-end">' +
+                '<button type="button" class="btn btn-sm btn-outline-info me-1" data-channel-id="' + channelId + '" onclick="testNotificationChannel(this.dataset.channelId)">测试</button>' +
+                '<button type="button" class="btn btn-sm btn-outline-primary me-1" data-channel-id="' + channelId + '" onclick="editNotificationChannel(this.dataset.channelId)">编辑</button>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" data-channel-id="' + channelId + '" onclick="deleteNotificationChannel(this.dataset.channelId)">删除</button>' +
+            '</td>' +
+        '</tr>';
+    }).join('');
+}
+function showNotificationChannelForm(channel = null) {
+    const form = document.getElementById('notificationChannelForm');
+    form.classList.remove('d-none');
+    document.getElementById('notificationChannelId').value = channel?.id || '';
+    document.getElementById('notificationChannelName').value = channel?.name || '';
+    document.getElementById('notificationChannelUrl').value = channel?.url || '';
+    document.getElementById('notificationChannelMethod').value = channel?.method || 'POST';
+    document.getElementById('notificationChannelType').value = channel?.content_type || 'JSON';
+    document.getElementById('notificationHeaders').value = channel?.headers || '{"User-Agent":"Cloudflare-VPS-Monitor"}';
+    document.getElementById('notificationBodyTemplate').value = channel?.body_template || defaultNotificationBodyTemplate();
+    document.getElementById('notificationVerifyTls').checked = channel?.verify_tls !== 0;
+    document.getElementById('notificationChannelEnabled').checked = channel?.enabled !== 0;
+    document.getElementById('notificationSkipTest').checked = false;
+}
+
+function hideNotificationChannelForm() {
+    document.getElementById('notificationChannelForm').classList.add('d-none');
+}
+
+function defaultNotificationBodyTemplate() {
+    return '{\n' +
+        '  "msgtype": "text",\n' +
+        '  "text": {\n' +
+        '    "content": "#MESSAGE#\\n服务器：#SERVER.NAME#\\nIP：#SERVER.IP#\\n时间：#DATETIME#"\n' +
+        '  }\n' +
+        '}';
+}
+function editNotificationChannel(channelId) {
+    const channel = notificationChannels.find(item => item.id === channelId);
+    if (!channel) return;
+    showNotificationChannelForm(channel);
+}
+
+async function saveNotificationChannel() {
+    const id = document.getElementById('notificationChannelId').value.trim();
+    const name = document.getElementById('notificationChannelName').value.trim();
+    const url = document.getElementById('notificationChannelUrl').value.trim();
+    const headers = document.getElementById('notificationHeaders').value.trim();
+    const bodyTemplate = document.getElementById('notificationBodyTemplate').value;
+
+    if (!name || !url) {
+        showToast('warning', '通知通道名称和 URL 不能为空');
+        return;
+    }
+
+    if (headers) {
+        try {
+            JSON.parse(headers);
+        } catch (error) {
+            showToast('warning', '请求头必须是合法 JSON，例如 {"User-Agent":"Cloudflare-VPS-Monitor"}');
+            return;
+        }
+    }
+
+    try {
+        await apiRequest('/api/admin/notification-channels', {
+            method: 'POST',
+            body: JSON.stringify({
+                id: id || undefined,
+                name,
+                url,
+                method: document.getElementById('notificationChannelMethod').value,
+                content_type: document.getElementById('notificationChannelType').value,
+                headers,
+                body_template: bodyTemplate,
+                verify_tls: document.getElementById('notificationVerifyTls').checked,
+                enabled: document.getElementById('notificationChannelEnabled').checked,
+                send_test: !document.getElementById('notificationSkipTest').checked
+            })
+        });
+
+        hideNotificationChannelForm();
+        await loadNotificationChannels();
+        showToast('success', 'Webhook 通知通道已保存');
+    } catch (error) {
+        showToast('danger', '保存 Webhook 通知通道失败: ' + error.message);
+    }
+}
+
+async function testNotificationChannel(channelId) {
+    try {
+        await apiRequest('/api/admin/notification-channels/test', {
+            method: 'POST',
+            body: JSON.stringify({ id: channelId })
+        });
+        showToast('success', '测试通知已发送');
+    } catch (error) {
+        showToast('danger', '测试通知发送失败: ' + error.message);
+    }
+}
+
+async function deleteNotificationChannel(channelId) {
+    if (!confirm('确定删除这个 Webhook 通知通道吗？')) return;
+
+    try {
+        await apiRequest('/api/admin/notification-channels/' + encodeURIComponent(channelId), {
+            method: 'DELETE'
+        });
+        await loadNotificationChannels();
+        showToast('success', 'Webhook 通知通道已删除');
+    } catch (error) {
+        showToast('danger', '删除 Webhook 通知通道失败: ' + error.message);
+    }
+}
+
 // --- Background Settings Functions ---
 
 // 加载背景设置
@@ -10077,3 +10639,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 `;
 }
+
