@@ -76,6 +76,7 @@ npm run setup
 ```
 
 默认情况下，脚本会使用 `admin` 作为用户名，并自动生成一个强密码。密码只会在终端显示一次，请及时保存。
+登录页不会展示默认密码；请以 `npm run setup` 输出或 Cloudflare Worker Secret 中配置的 `PASSWORD` 为准。
 
 部署 Worker：
 

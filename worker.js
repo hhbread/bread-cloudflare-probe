@@ -6,7 +6,7 @@
 function getAdminConfig(env) {
   return {
     USERNAME: env.USERNAME || 'admin',
-    PASSWORD: env.PASSWORD || 'monitor2025!',
+    PASSWORD: env.PASSWORD || 'change-me',
   };
 }
 
@@ -7693,7 +7693,7 @@ async function apiRequest(url, options = {}) {
 function loadDefaultCredentials() {
     const credentialsInfo = document.getElementById('defaultCredentialsInfo');
     if (credentialsInfo) {
-        credentialsInfo.innerHTML = '默认账号密码: <strong>admin</strong> / <strong>monitor2025!</strong><br><small class="text-danger fw-bold">建议首次登录后修改密码</small>';
+        credentialsInfo.innerHTML = '默认用户名: <strong>admin</strong><br><small class="text-muted">密码以 setup 输出或 Cloudflare Secret 中的 <strong>PASSWORD</strong> 为准。</small>';
     }
 }
 
