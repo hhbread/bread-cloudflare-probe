@@ -1,4 +1,4 @@
-﻿// VPS监控面板 - Cloudflare Worker解决方案
+﻿// 面包探针 - Cloudflare Worker解决方案
 // 版本: 1.1.0
 // ==================== 配置常量 ====================
 
@@ -3934,7 +3934,7 @@ function getIndexHtml() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPS监控面板</title>
+    <title>面包探针</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script>
         // 立即设置主题，避免闪烁
@@ -4258,10 +4258,10 @@ function getIndexHtml() {
                         <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
                     </circle>
                 </svg>
-                VPS监控面板
+                面包探针
             </a>
             <div class="d-flex align-items-center">
-                <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="btn btn-outline-light btn-sm me-2" title="GitHub Repository">
+                <a href="https://github.com/hhbread/bread-cloudflare-probe" target="_blank" rel="noopener noreferrer" class="btn btn-outline-light btn-sm me-2" title="GitHub Repository">
                     <i class="bi bi-github"></i>
                 </a>
                 <button id="themeToggler" class="btn btn-outline-light btn-sm me-2" title="切换主题">
@@ -4385,8 +4385,8 @@ function getIndexHtml() {
 
     <footer class="footer fixed-bottom py-2 bg-light border-top">
         <div class="container text-center">
-            <span class="text-muted small">VPS监控面板 &copy; 2025</span>
-            <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
+            <span class="text-muted small">面包探针 &copy; 2025</span>
+            <a href="https://github.com/hhbread/bread-cloudflare-probe" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
                 <i class="bi bi-github"></i>
             </a>
         </div>
@@ -4404,7 +4404,7 @@ function getLoginHtml() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - VPS监控面板</title>
+    <title>登录 - 面包探针</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script>
         // 立即设置主题，避免闪烁
@@ -4622,7 +4622,7 @@ function getLoginHtml() {
                         <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
                     </circle>
                 </svg>
-                VPS监控面板
+                面包探针
             </a>
             <div class="d-flex align-items-center">
                 <button id="themeToggler" class="btn btn-outline-light btn-sm me-2" title="切换主题">
@@ -4666,8 +4666,8 @@ function getLoginHtml() {
 
     <footer class="footer fixed-bottom py-2 bg-light border-top">
         <div class="container text-center">
-            <span class="text-muted small">VPS监控面板 &copy; 2025</span>
-            <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
+            <span class="text-muted small">面包探针 &copy; 2025</span>
+            <a href="https://github.com/hhbread/bread-cloudflare-probe" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
                 <i class="bi bi-github"></i>
             </a>
         </div>
@@ -4685,7 +4685,7 @@ function getAdminHtml() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理后台 - VPS监控面板</title>
+    <title>管理后台 - 面包探针</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script>
         // 立即设置主题，避免闪烁
@@ -4732,13 +4732,13 @@ function getAdminHtml() {
                         <animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/>
                     </circle>
                 </svg>
-                VPS监控面板
+                面包探针
             </a>
             <div class="d-flex align-items-center flex-wrap">
                 <a class="nav-link text-light me-2" href="/" style="white-space: nowrap;">返回首页</a>
 
                 <!-- PC端直接显示的按钮 -->
-                <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="btn btn-outline-light btn-sm me-2 desktop-only" title="GitHub Repository">
+                <a href="https://github.com/hhbread/bread-cloudflare-probe" target="_blank" rel="noopener noreferrer" class="btn btn-outline-light btn-sm me-2 desktop-only" title="GitHub Repository">
                     <i class="bi bi-github"></i>
                 </a>
 
@@ -4756,7 +4756,7 @@ function getAdminHtml() {
                         <i class="bi bi-three-dots"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="adminMenuDropdown">
-                        <li><a class="dropdown-item" href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer">
+                        <li><a class="dropdown-item" href="https://github.com/hhbread/bread-cloudflare-probe" target="_blank" rel="noopener noreferrer">
                             <i class="bi bi-github me-2"></i>GitHub
                         </a></li>
                         <li><button class="dropdown-item" id="changePasswordBtn">
@@ -5042,37 +5042,6 @@ function getAdminHtml() {
                     </div>
                 </div>
 
-                <!-- 分隔线 -->
-                <hr class="my-4">
-
-                <!-- 背景设置部分 -->
-                <div>
-                    <h5 class="card-title mb-3">
-                        <i class="bi bi-image me-2"></i>背景设置
-                    </h5>
-
-
-
-                    <form id="backgroundSettingsForm">
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" id="enableCustomBackground">
-                            <label class="form-check-label" for="enableCustomBackground">
-                                启用自定义背景
-                            </label>
-                        </div>
-                        <div class="mb-3">
-                            <label for="backgroundImageUrl" class="form-label">背景图片URL</label>
-                            <input type="url" class="form-control" id="backgroundImageUrl" placeholder="请输入背景图片URL (必须以https://开头)">
-                            <div class="form-text">建议使用高质量图片，支持JPG、PNG格式</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="pageOpacity" class="form-label">页面透明度: <span id="opacityValue">80</span>%</label>
-                            <input type="range" class="form-range" id="pageOpacity" min="0" max="100" value="80" step="1">
-                            <div class="form-text">调整页面元素的透明度，数值越小越透明</div>
-                        </div>
-                        <button type="button" id="saveBackgroundSettingsBtn" class="btn btn-info">保存背景设置</button>
-                    </form>
-                </div>
             </div>
         </div>
     </div>
@@ -5247,8 +5216,8 @@ function getAdminHtml() {
 
     <footer class="footer fixed-bottom py-2 bg-light border-top">
         <div class="container text-center">
-            <span class="text-muted small">VPS监控面板 &copy; 2025</span>
-            <a href="https://github.com/kadidalax/cf-vps-monitor" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
+            <span class="text-muted small">面包探针 &copy; 2025</span>
+            <a href="https://github.com/hhbread/bread-cloudflare-probe" target="_blank" rel="noopener noreferrer" class="ms-3 text-muted" title="GitHub Repository">
                 <i class="bi bi-github"></i>
             </a>
         </div>
@@ -5584,7 +5553,7 @@ hr.my-4 {
     color: #86b7fe;
 }
 
-/* VPS监控面板标题 - 蓝色加粗 */
+/* 面包探针标题 - 蓝色加粗 */
 .navbar-brand {
     color: var(--bs-primary) !important;
     font-weight: 600 !important;
@@ -6812,6 +6781,332 @@ p, div, span:not(.badge), td, th, .btn, button, a:not(.navbar-brand),
     line-height: 1.25;
 }
 
+/* ==================== Bread Cloudflare Probe UI Refresh ==================== */
+:root {
+    --bread-bg: #f7f6ff;
+    --bread-surface: rgba(255, 255, 255, 0.94);
+    --bread-surface-strong: #ffffff;
+    --bread-border: rgba(99, 102, 241, 0.12);
+    --bread-border-strong: rgba(99, 102, 241, 0.24);
+    --bread-text: #171827;
+    --bread-muted: #697086;
+    --bread-primary: #6557ff;
+    --bread-primary-2: #08a7c9;
+    --bread-success: #12a884;
+    --bread-danger: #f0526d;
+    --bread-warning: #d99019;
+    --bread-shadow: 0 18px 48px rgba(38, 35, 96, 0.08);
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    background:
+        radial-gradient(circle at 14% 8%, rgba(148, 125, 255, 0.20), transparent 28rem),
+        radial-gradient(circle at 86% 0%, rgba(20, 184, 166, 0.13), transparent 26rem),
+        linear-gradient(180deg, #fbfbff 0%, var(--bread-bg) 48%, #eef8fb 100%) !important;
+    color: var(--bread-text);
+    letter-spacing: 0;
+    padding-bottom: 48px;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+        linear-gradient(rgba(101, 87, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(8, 167, 201, 0.035) 1px, transparent 1px);
+    background-size: 38px 38px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.88), rgba(0,0,0,0.12));
+}
+
+body.custom-background-enabled::before {
+    background-image:
+        linear-gradient(rgba(101, 87, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(8, 167, 201, 0.035) 1px, transparent 1px) !important;
+}
+
+.navbar {
+    min-height: 58px;
+    height: 58px;
+    border-bottom: 1px solid var(--bread-border);
+    background: rgba(255, 255, 255, 0.82) !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 10px 32px rgba(40, 38, 92, 0.06);
+}
+
+.navbar-brand {
+    color: var(--bread-text) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0;
+}
+
+.navbar-brand i {
+    color: var(--bread-primary) !important;
+}
+
+.navbar .nav-link,
+.navbar a:not(.dropdown-item) {
+    color: var(--bread-text) !important;
+}
+
+.container {
+    max-width: 1240px;
+}
+
+.container.mt-4 {
+    margin-top: 1.25rem !important;
+}
+
+.card {
+    border: 1px solid var(--bread-border) !important;
+    border-radius: 14px !important;
+    background: var(--bread-surface) !important;
+    box-shadow: var(--bread-shadow) !important;
+    overflow: hidden;
+}
+
+.card.shadow-sm {
+    border: 1px solid var(--bread-border) !important;
+    box-shadow: var(--bread-shadow) !important;
+}
+
+.card-header {
+    background: linear-gradient(90deg, rgba(101, 87, 255, 0.08), rgba(8, 167, 201, 0.05)) !important;
+    border-bottom: 1px solid var(--bread-border) !important;
+}
+
+.card-title {
+    color: var(--bread-text) !important;
+    font-weight: 700;
+}
+
+.card-title i {
+    color: var(--bread-primary) !important;
+}
+
+.admin-header-row {
+    padding: 0.35rem 0 0.75rem;
+    border-bottom: 1px solid rgba(101, 87, 255, 0.08);
+    margin-bottom: 1rem !important;
+}
+
+.admin-header-title h2 {
+    font-size: 1.28rem;
+    font-weight: 750;
+    color: var(--bread-text);
+}
+
+.admin-header-title h2 i {
+    color: var(--bread-primary);
+}
+
+.table-responsive {
+    border: 1px solid rgba(101, 87, 255, 0.10);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.66);
+    overflow: auto;
+}
+
+.table {
+    margin-bottom: 0;
+    color: var(--bread-text);
+}
+
+.table th {
+    background: rgba(247, 247, 255, 0.95) !important;
+    color: #4b4f68;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(101, 87, 255, 0.12) !important;
+    padding: 0.78rem 0.85rem;
+}
+
+.table td {
+    border-color: rgba(101, 87, 255, 0.08) !important;
+    padding: 0.72rem 0.85rem;
+    vertical-align: middle;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+    --bs-table-accent-bg: rgba(101, 87, 255, 0.025);
+}
+
+.table-hover > tbody > tr:hover > * {
+    --bs-table-accent-bg: rgba(8, 167, 201, 0.055);
+}
+
+.btn {
+    border-radius: 10px;
+    font-weight: 650;
+    box-shadow: none !important;
+}
+
+.btn-primary,
+.btn-info {
+    border-color: transparent !important;
+    background: linear-gradient(135deg, var(--bread-primary), var(--bread-primary-2)) !important;
+    color: #fff !important;
+}
+
+.btn-outline-light,
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-info {
+    border-color: var(--bread-border-strong) !important;
+    color: var(--bread-primary) !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.btn-outline-danger {
+    border-color: rgba(240, 82, 109, 0.24) !important;
+    color: var(--bread-danger) !important;
+    background: rgba(255, 255, 255, 0.72) !important;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.form-control,
+.form-select,
+.form-range {
+    border-radius: 10px;
+    border-color: rgba(101, 87, 255, 0.16);
+    background-color: rgba(255, 255, 255, 0.86);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: rgba(101, 87, 255, 0.48);
+    box-shadow: 0 0 0 0.22rem rgba(101, 87, 255, 0.13);
+}
+
+.badge {
+    border-radius: 999px;
+    padding: 0.42em 0.72em;
+    font-weight: 700;
+}
+
+.bg-success {
+    background-color: var(--bread-success) !important;
+}
+
+.bg-danger {
+    background-color: var(--bread-danger) !important;
+}
+
+.bg-warning {
+    background-color: var(--bread-warning) !important;
+}
+
+.progress {
+    height: 0.7rem;
+    border-radius: 999px;
+    background: rgba(101, 87, 255, 0.10);
+}
+
+.progress-bar {
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--bread-primary), var(--bread-primary-2));
+}
+
+.modal-content,
+.dropdown-menu {
+    border: 1px solid var(--bread-border);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.96) !important;
+    box-shadow: var(--bread-shadow);
+}
+
+.footer.fixed-bottom {
+    height: 34px;
+    border-top: 1px solid var(--bread-border);
+    background: rgba(255, 255, 255, 0.78) !important;
+    backdrop-filter: blur(14px);
+}
+
+.footer .text-muted {
+    color: var(--bread-muted) !important;
+}
+
+hr.my-4 {
+    border-color: rgba(101, 87, 255, 0.12);
+    opacity: 1;
+}
+
+.mobile-server-card,
+.mobile-site-card {
+    border: 1px solid var(--bread-border);
+    border-radius: 14px;
+    background: var(--bread-surface);
+    box-shadow: var(--bread-shadow);
+}
+
+.mobile-card-header {
+    background: rgba(101, 87, 255, 0.055);
+    border-bottom: 1px solid var(--bread-border);
+}
+
+[data-bs-theme="dark"] body {
+    background:
+        radial-gradient(circle at 15% 10%, rgba(101, 87, 255, 0.18), transparent 28rem),
+        radial-gradient(circle at 90% 0%, rgba(8, 167, 201, 0.12), transparent 26rem),
+        linear-gradient(180deg, #12131d 0%, #171827 58%, #101823 100%) !important;
+    color: #f5f7ff;
+}
+
+[data-bs-theme="dark"] .navbar,
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .table-responsive,
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .dropdown-menu {
+    background: rgba(24, 25, 39, 0.90) !important;
+    border-color: rgba(167, 139, 250, 0.18) !important;
+}
+
+[data-bs-theme="dark"] .navbar-brand,
+[data-bs-theme="dark"] .navbar .nav-link,
+[data-bs-theme="dark"] .navbar a:not(.dropdown-item),
+[data-bs-theme="dark"] .card-title,
+[data-bs-theme="dark"] .admin-header-title h2 {
+    color: #f5f7ff !important;
+}
+
+[data-bs-theme="dark"] .table {
+    color: #f5f7ff;
+}
+
+[data-bs-theme="dark"] .table th {
+    background: rgba(35, 37, 57, 0.95) !important;
+    color: #cbd1e6;
+}
+
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: rgba(18, 19, 29, 0.86);
+    border-color: rgba(167, 139, 250, 0.22);
+    color: #f5f7ff;
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        height: auto;
+        min-height: 58px;
+    }
+
+    .card {
+        border-radius: 12px !important;
+    }
+}
 
 `;
 }
@@ -8583,34 +8878,6 @@ function initEventListeners() {
         hideNotificationChannelForm();
     });
 
-    // Background Settings Event Listeners
-    document.getElementById('saveBackgroundSettingsBtn').addEventListener('click', function() {
-        saveBackgroundSettings();
-    });
-
-    // 透明度滑块实时预览
-    document.getElementById('pageOpacity').addEventListener('input', function() {
-        updateOpacityPreview();
-    });
-
-    // 背景开关变化时的预览
-    document.getElementById('enableCustomBackground').addEventListener('change', function() {
-        const enabled = this.checked;
-        const url = document.getElementById('backgroundImageUrl').value.trim();
-        const opacity = parseInt(document.getElementById('pageOpacity').value, 10);
-        applyBackgroundSettings(enabled, url, opacity, false);
-    });
-
-    // URL输入框变化时的预览
-    document.getElementById('backgroundImageUrl').addEventListener('input', function() {
-        const enabled = document.getElementById('enableCustomBackground').checked;
-        const url = this.value.trim();
-        const opacity = parseInt(document.getElementById('pageOpacity').value, 10);
-        if (enabled) {
-            applyBackgroundSettings(enabled, url, opacity, false);
-        }
-    });
-
     // Global Settings Event Listener
     document.getElementById('saveVpsReportIntervalBtn').addEventListener('click', function() {
         saveVpsReportInterval();
@@ -8962,7 +9229,7 @@ async function copyVpsInstallScript(serverId, serverName, buttonElement) {
         const workerUrl = window.location.origin;
 
         // 使用GitHub上的脚本地址
-        const baseScriptUrl = "https://raw.githubusercontent.com/kadidalax/cf-vps-monitor/main/cf-vps-monitor.sh";
+        const baseScriptUrl = "https://raw.githubusercontent.com/hhbread/bread-cloudflare-probe/main/cf-vps-monitor.sh";
         // 生成安装命令（让脚本自动从服务器获取上报间隔）
         const scriptCommand = 'wget ' + baseScriptUrl + ' -O cf-vps-monitor.sh && chmod +x cf-vps-monitor.sh && ./cf-vps-monitor.sh -i -k ' + apiKey + ' -s ' + serverId + ' -u ' + workerUrl;
 
@@ -10045,102 +10312,32 @@ async function deleteNotificationChannel(channelId) {
 
 // 加载背景设置
 async function loadBackgroundSettings() {
-    try {
-        const settings = await apiRequest('/api/background-settings');
-        if (settings) {
-            document.getElementById('enableCustomBackground').checked = !!settings.enabled;
-            document.getElementById('backgroundImageUrl').value = settings.url || '';
-            document.getElementById('pageOpacity').value = settings.opacity || 80;
-            document.getElementById('opacityValue').textContent = settings.opacity || 80;
-
-            // 应用当前设置（不保存到数据库）
-            applyBackgroundSettings(settings.enabled, settings.url, settings.opacity, false);
-        }
-    } catch (error) {
-                showToast('danger', '加载背景设置失败: ' + error.message);
-    }
+    applyBackgroundSettings(false, '', 100, false);
 }
 
 // 保存背景设置
 async function saveBackgroundSettings() {
-    const enabled = document.getElementById('enableCustomBackground').checked;
-    const url = document.getElementById('backgroundImageUrl').value.trim();
-    const opacity = parseInt(document.getElementById('pageOpacity').value, 10);
-
-    // 验证输入
-    if (enabled && url) {
-        if (!url.startsWith('https://')) {
-            showToast('warning', '背景图片URL必须以https://开头');
-            return;
-        }
-    }
-
-    if (isNaN(opacity) || opacity < 0 || opacity > 100) {
-        showToast('warning', '透明度必须是0-100之间的数字');
-        return;
-    }
-
-    try {
-        await apiRequest('/api/admin/background-settings', {
-            method: 'POST',
-            body: JSON.stringify({
-                enabled: enabled,
-                url: url,
-                opacity: opacity
-            })
-        });
-
-        // 应用设置并保存到localStorage
-        applyBackgroundSettings(enabled, url, opacity, true);
-
-        showToast('success', '背景设置已成功保存');
-
-    } catch (error) {
-                showToast('danger', '保存背景设置失败: ' + error.message);
-    }
+    applyBackgroundSettings(false, '', 100, true);
+    showToast('info', '自定义背景设置已移除，面包探针现在使用固定科技主题');
 }
 
 // 应用背景设置
 function applyBackgroundSettings(enabled, url, opacity, saveToCache = false) {
     const body = document.body;
-
-    if (enabled && url) {
-        // 设置背景图片
-        body.style.setProperty('--custom-background-url', \`url(\${url})\`);
-        body.style.setProperty('--page-opacity', opacity / 100);
-        body.classList.add('custom-background-enabled');
-
-
-    } else {
-        // 移除背景图片
-        body.style.removeProperty('--custom-background-url');
-        body.style.removeProperty('--page-opacity');
-        body.classList.remove('custom-background-enabled');
-
-
-    }
+    body.style.removeProperty('--custom-background-url');
+    body.style.removeProperty('--page-opacity');
+    body.classList.remove('custom-background-enabled');
 
     // 缓存设置到localStorage（可选）
     if (saveToCache) {
-        const settings = { enabled, url, opacity, timestamp: Date.now() };
+        const settings = { enabled: false, url: '', opacity: 100, timestamp: Date.now() };
         localStorage.setItem('background-settings-cache', JSON.stringify(settings));
     }
 }
 
 // 实时预览透明度变化
 function updateOpacityPreview() {
-    const opacity = parseInt(document.getElementById('pageOpacity').value, 10);
-    const enabled = document.getElementById('enableCustomBackground').checked;
-    const url = document.getElementById('backgroundImageUrl').value.trim();
-
-    // 更新显示的数值
-    document.getElementById('opacityValue').textContent = opacity;
-
-    // 实时预览（不保存）
-    if (enabled && url) {
-        document.body.style.setProperty('--page-opacity', opacity / 100);
-
-    }
+    applyBackgroundSettings(false, '', 100, false);
 }
 
 
@@ -10639,4 +10836,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 `;
 }
+
 
