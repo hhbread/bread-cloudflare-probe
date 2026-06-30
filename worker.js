@@ -9197,7 +9197,7 @@ function defaultNotificationBodyTemplate() {
     return JSON.stringify({
         msgtype: 'text',
         text: {
-            content: '#MESSAGE#\\n????#SERVER.NAME#\\nIP?#SERVER.IP#\\n???#DATETIME#'
+            content: '#MESSAGE#\\nServer: #SERVER.NAME#\\nIP: #SERVER.IP#\\nTime: #DATETIME#'
         }
     }, null, 2);
 }
