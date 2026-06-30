@@ -945,7 +945,8 @@ async function applySchemaAlterations(db) {
 
 async function isUsingDefaultPassword(username, password, env) {
   const adminConfig = getAdminConfig(env);
-  return username === adminConfig.USERNAME && password === adminConfig.PASSWORD;
+  const isFallbackPassword = !env.PASSWORD || env.PASSWORD === 'change-me';
+  return isFallbackPassword && username === adminConfig.USERNAME && password === adminConfig.PASSWORD;
 }
 
 async function createDefaultAdmin(db, env) {
@@ -3307,7 +3308,7 @@ function defaultWebhookBodyTemplate() {
 function buildNotificationTemplateValues(message, context = {}, priority = 'normal') {
   const now = new Date();
   return {
-    '#NEZHA#': 'Cloudflare VPS Monitor',
+    '#NEZHA#': 'Bread Cloudflare Probe',
     '#MESSAGE#': message,
     '#DATETIME#': now.toISOString(),
     '#DATE#': now.toISOString().slice(0, 10),
@@ -3403,10 +3404,6 @@ export default {
     }
 
     // 安装脚本处理
-    if (path === '/install.sh') {
-      return handleInstallScript(request, url, env);
-    }
-
     // 前端静态文件处理
     return handleFrontendRequest(request, path);
   },
@@ -3481,260 +3478,6 @@ function isValidHttpUrl(string) {
 // ==================== 处理函数 ====================
 
 // 安装脚本处理
-async function handleInstallScript(request, url, env) {
-  const baseUrl = url.origin;
-  let vpsReportInterval = '60'; // 默认值
-
-  try {
-    // 确保app_config表存在
-    if (D1_SCHEMAS?.app_config) {
-      await env.DB.exec(D1_SCHEMAS.app_config);
-    } else {
-          }
-
-    // 使用统一的缓存查询函数
-    const interval = await getVpsReportInterval(env);
-    vpsReportInterval = interval.toString();
-  } catch (e) {
-        // 使用默认值
-  }
-
-  const script = `#!/bin/bash
-# VPS监控脚本 - 安装程序
-
-# 默认值
-API_KEY=""
-SERVER_ID=""
-WORKER_URL="${baseUrl}"
-INSTALL_DIR="/opt/bread-probe-agent"
-SERVICE_NAME="bread-probe-agent"
-
-# 解析参数
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    -k|--key)
-      API_KEY="$2"
-      shift 2
-      ;;
-    -s|--server)
-      SERVER_ID="$2"
-      shift 2
-      ;;
-    -u|--url)
-      WORKER_URL="$2"
-      shift 2
-      ;;
-    -d|--dir)
-      INSTALL_DIR="$2"
-      shift 2
-      ;;
-    *)
-      echo "未知参数: $1"
-      exit 1
-      ;;
-  esac
-done
-
-# 检查必要参数
-if [ -z "$API_KEY" ] || [ -z "$SERVER_ID" ]; then
-  echo "错误: API密钥和服务器ID是必需的"
-  echo "用法: $0 -k API_KEY -s SERVER_ID [-u WORKER_URL] [-d INSTALL_DIR]"
-  exit 1
-fi
-
-# 检查权限
-if [ "$(id -u)" -ne 0 ]; then
-  echo "错误: 此脚本需要root权限"
-  exit 1
-fi
-
-echo "=== VPS监控脚本安装程序 ==="
-echo "安装目录: $INSTALL_DIR"
-echo "Worker URL: $WORKER_URL"
-
-# 创建安装目录
-mkdir -p "$INSTALL_DIR"
-cd "$INSTALL_DIR" || exit 1
-
-# 创建监控脚本
-cat > "$INSTALL_DIR/monitor.sh" << 'EOF'
-#!/bin/bash
-
-# 配置
-API_KEY="__API_KEY__"
-SERVER_ID="__SERVER_ID__"
-WORKER_URL="__WORKER_URL__"
-INTERVAL=${vpsReportInterval}  # 上报间隔（秒）
-
-# 日志函数
-log() {
-  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1"
-}
-
-# 获取CPU使用率
-get_cpu_usage() {
-  cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\\([0-9.]*\\)%* id.*/\\1/" | awk '{print 100 - $1}')
-  cpu_load=$(cat /proc/loadavg | awk '{print $1","$2","$3}')
-  echo "{\"usage_percent\":$cpu_usage,\"load_avg\":[$cpu_load]}"
-}
-
-# 获取内存使用情况
-get_memory_usage() {
-  total=$(free -k | grep Mem | awk '{print $2}')
-  used=$(free -k | grep Mem | awk '{print $3}')
-  free=$(free -k | grep Mem | awk '{print $4}')
-  usage_percent=$(echo "scale=1; $used * 100 / $total" | bc)
-  echo "{\"total\":$total,\"used\":$used,\"free\":$free,\"usage_percent\":$usage_percent}"
-}
-
-# 获取硬盘使用情况
-get_disk_usage() {
-  disk_info=$(df -k / | tail -1)
-  total=$(echo "$disk_info" | awk '{print $2 / 1024 / 1024}')
-  used=$(echo "$disk_info" | awk '{print $3 / 1024 / 1024}')
-  free=$(echo "$disk_info" | awk '{print $4 / 1024 / 1024}')
-  usage_percent=$(echo "$disk_info" | awk '{print $5}' | tr -d '%')
-  echo "{\"total\":$total,\"used\":$used,\"free\":$free,\"usage_percent\":$usage_percent}"
-}
-
-# 获取网络使用情况
-get_network_usage() {
-  # 检查是否安装了ifstat
-  if ! command -v ifstat &> /dev/null; then
-    log "ifstat未安装，无法获取网络速度"
-    echo "{\"upload_speed\":0,\"download_speed\":0,\"total_upload\":0,\"total_download\":0}"
-    return
-  fi
-
-  # 获取网络接口
-  interface=$(ip route | grep default | awk '{print $5}')
-
-  # 获取网络速度（KB/s）
-  network_speed=$(ifstat -i "$interface" 1 1 | tail -1)
-  download_speed=$(echo "$network_speed" | awk '{print $1 * 1024}')
-  upload_speed=$(echo "$network_speed" | awk '{print $2 * 1024}')
-
-  # 获取总流量
-  rx_bytes=$(cat /proc/net/dev | grep "$interface" | awk '{print $2}')
-  tx_bytes=$(cat /proc/net/dev | grep "$interface" | awk '{print $10}')
-
-  echo "{\"upload_speed\":$upload_speed,\"download_speed\":$download_speed,\"total_upload\":$tx_bytes,\"total_download\":$rx_bytes}"
-}
-
-# 上报数据
-report_metrics() {
-  timestamp=$(date +%s)
-  cpu=$(get_cpu_usage)
-  memory=$(get_memory_usage)
-  disk=$(get_disk_usage)
-  network=$(get_network_usage)
-
-  data="{\"timestamp\":$timestamp,\"cpu\":$cpu,\"memory\":$memory,\"disk\":$disk,\"network\":$network}"
-
-  log "正在上报数据..."
-  log "API密钥: $API_KEY"
-  log "服务器ID: $SERVER_ID"
-  log "Worker URL: $WORKER_URL"
-
-  response=$(curl -s -X POST "$WORKER_URL/api/report/$SERVER_ID" \
-    -H "Content-Type: application/json" \
-    -H "X-API-Key: $API_KEY" \
-    -d "$data")
-
-  if [[ "$response" == *"success"* ]]; then
-    log "数据上报成功"
-  else
-    log "数据上报失败: $response"
-  fi
-}
-
-# 安装依赖
-install_dependencies() {
-  log "检查并安装依赖..."
-
-  # 检测包管理器
-  if command -v apt-get &> /dev/null; then
-    PKG_MANAGER="apt-get"
-  elif command -v yum &> /dev/null; then
-    PKG_MANAGER="yum"
-  else
-    log "不支持的系统，无法自动安装依赖"
-    return 1
-  fi
-
-  # 安装依赖
-  $PKG_MANAGER update -y
-  $PKG_MANAGER install -y bc curl ifstat
-
-  log "依赖安装完成"
-  return 0
-}
-
-# 主函数
-main() {
-  log "VPS监控脚本启动"
-
-  # 安装依赖
-  install_dependencies
-
-  # 主循环
-  while true; do
-    report_metrics
-    sleep $INTERVAL
-  done
-}
-
-# 启动主函数
-main
-EOF
-
-# 替换配置
-sed -i "s|__API_KEY__|$API_KEY|g" "$INSTALL_DIR/monitor.sh"
-sed -i "s|__SERVER_ID__|$SERVER_ID|g" "$INSTALL_DIR/monitor.sh"
-sed -i "s|__WORKER_URL__|$WORKER_URL|g" "$INSTALL_DIR/monitor.sh"
-# This line ensures the INTERVAL placeholder is replaced with the fetched value.
-sed -i "s|^INTERVAL=.*|INTERVAL=${vpsReportInterval}|g" "$INSTALL_DIR/monitor.sh"
-
-# 设置执行权限
-chmod +x "$INSTALL_DIR/monitor.sh"
-
-# 创建systemd服务
-cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF
-[Unit]
-Description=Bread Probe Agent Service
-After=network.target
-
-[Service]
-ExecStart=$INSTALL_DIR/monitor.sh
-Restart=always
-User=root
-Group=root
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# 启动服务
-systemctl daemon-reload
-systemctl enable "$SERVICE_NAME"
-systemctl start "$SERVICE_NAME"
-
-echo "=== 安装完成 ==="
-echo "服务已启动并设置为开机自启"
-echo "查看服务状态: systemctl status $SERVICE_NAME"
-echo "查看服务日志: journalctl -u $SERVICE_NAME -f"
-`;
-
-  return new Response(script, {
-    headers: {
-      'Content-Type': 'text/plain',
-      'Content-Disposition': 'attachment; filename="bread-probe-agent.sh"'
-    }
-  });
-}
-
-// 前端请求处理
 function handleFrontendRequest(request, path) {
   const routes = {
     '/': () => new Response(getIndexHtml(), { headers: { 'Content-Type': 'text/html' } }),
@@ -3776,7 +3519,7 @@ function getIndexHtml() {
     <script>
         // 立即设置主题，避免闪烁
         (function() {
-            const theme = localStorage.getItem('vps-monitor-theme') || 'light';
+            const theme = localStorage.getItem('bread-probe-theme') || 'light';
             document.documentElement.setAttribute('data-bs-theme', theme);
         })();
     </script>
@@ -4246,7 +3989,7 @@ function getLoginHtml() {
     <script>
         // 立即设置主题，避免闪烁
         (function() {
-            const theme = localStorage.getItem('vps-monitor-theme') || 'light';
+            const theme = localStorage.getItem('bread-probe-theme') || 'light';
             document.documentElement.setAttribute('data-bs-theme', theme);
         })();
     </script>
@@ -4527,7 +4270,7 @@ function getAdminHtml() {
     <script>
         // 立即设置主题，避免闪烁
         (function() {
-            const theme = localStorage.getItem('vps-monitor-theme') || 'light';
+            const theme = localStorage.getItem('bread-probe-theme') || 'light';
             document.documentElement.setAttribute('data-bs-theme', theme);
         })();
     </script>
@@ -4855,7 +4598,7 @@ function getAdminHtml() {
                                 </div>
                                 <div class="col-12">
                                     <label for="notificationHeaders" class="form-label">请求头</label>
-                                    <textarea class="form-control" id="notificationHeaders" rows="2" placeholder='{"User-Agent":"Cloudflare-VPS-Monitor"}'></textarea>
+                                    <textarea class="form-control" id="notificationHeaders" rows="2" placeholder='{"User-Agent":"Bread-Cloudflare-Probe"}'></textarea>
                                 </div>
                                 <div class="col-12">
                                     <label for="notificationBodyTemplate" class="form-label">请求体</label>
@@ -6801,7 +6544,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // --- Theme Management ---
-const THEME_KEY = 'vps-monitor-theme';
+const THEME_KEY = 'bread-probe-theme';
 const LIGHT_THEME = 'light';
 const DARK_THEME = 'dark';
 
@@ -7578,7 +7321,7 @@ function getLoginJs() {
 // 注意：此处的apiRequest函数已移至主要位置，避免重复定义
 
 // --- Theme Management (copied from main.js) ---
-const THEME_KEY = 'vps-monitor-theme';
+const THEME_KEY = 'bread-probe-theme';
 const LIGHT_THEME = 'light';
 const DARK_THEME = 'dark';
 
@@ -7846,7 +7589,7 @@ async function initializeVpsDataUpdates() {
     }
 
 // --- Theme Management (copied from main.js) ---
-const THEME_KEY = 'vps-monitor-theme';
+const THEME_KEY = 'bread-probe-theme';
 const LIGHT_THEME = 'light';
 const DARK_THEME = 'dark';
 
@@ -9439,7 +9182,7 @@ function showNotificationChannelForm(channel = null) {
     document.getElementById('notificationChannelUrl').value = channel?.url || '';
     document.getElementById('notificationChannelMethod').value = channel?.method || 'POST';
     document.getElementById('notificationChannelType').value = channel?.content_type || 'JSON';
-    document.getElementById('notificationHeaders').value = channel?.headers || '{"User-Agent":"Cloudflare-VPS-Monitor"}';
+    document.getElementById('notificationHeaders').value = channel?.headers || '{"User-Agent":"Bread-Cloudflare-Probe"}';
     document.getElementById('notificationBodyTemplate').value = channel?.body_template || defaultNotificationBodyTemplate();
     document.getElementById('notificationVerifyTls').checked = channel?.verify_tls !== 0;
     document.getElementById('notificationChannelEnabled').checked = channel?.enabled !== 0;
@@ -9480,7 +9223,7 @@ async function saveNotificationChannel() {
         try {
             JSON.parse(headers);
         } catch (error) {
-            showToast('warning', '请求头必须是合法 JSON，例如 {"User-Agent":"Cloudflare-VPS-Monitor"}');
+            showToast('warning', '请求头必须是合法 JSON，例如 {"User-Agent":"Bread-Cloudflare-Probe"}');
             return;
         }
     }
