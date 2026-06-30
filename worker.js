@@ -879,20 +879,7 @@ const D1_SCHEMAS = {
     );
     INSERT OR IGNORE INTO telegram_config (id, bot_token, chat_id, enable_notifications, updated_at) VALUES (1, NULL, NULL, 0, NULL);`,
 
-  notification_channels: `
-    CREATE TABLE IF NOT EXISTS notification_channels (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      url TEXT NOT NULL,
-      method TEXT DEFAULT 'POST',
-      content_type TEXT DEFAULT 'JSON',
-      headers TEXT,
-      body_template TEXT,
-      verify_tls INTEGER DEFAULT 1,
-      enabled INTEGER DEFAULT 1,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER
-    );`,
+  notification_channels: `CREATE TABLE IF NOT EXISTS notification_channels (id TEXT PRIMARY KEY, name TEXT NOT NULL, url TEXT NOT NULL, method TEXT DEFAULT 'POST', content_type TEXT DEFAULT 'JSON', headers TEXT, body_template TEXT, verify_tls INTEGER DEFAULT 1, enabled INTEGER DEFAULT 1, created_at INTEGER NOT NULL, updated_at INTEGER);`,
 
   app_config: `
     CREATE TABLE IF NOT EXISTS app_config (
