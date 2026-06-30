@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# bread-probe-agent - Cloudflare Worker VPS监控脚本
+# bread-probe-agent - Cloudflare Worker 服务器探针脚本
 # 版本: 1.1.0
 # 支持所有常见Linux系统，无需root权限
 
@@ -3292,5 +3292,4 @@ fi
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     main "$@"
 fi
-
 
