@@ -1,5 +1,7 @@
 # Bread Cloudflare Probe
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hhbread/bread-cloudflare-probe)
+
 **Bread Cloudflare Probe** is a Cloudflare-native server monitoring panel.
 
 The dashboard runs on Cloudflare Workers, stores data in Cloudflare D1, and receives periodic reports from lightweight probe agents. The goal is to provide a simple, low-maintenance monitoring system for personal servers and small teams.
@@ -15,6 +17,32 @@ The dashboard runs on Cloudflare Workers, stores data in Cloudflare D1, and rece
 - Cloudflare Workers + D1 deployment
 
 ## Quick Start
+
+### Option 1: Deploy to Cloudflare
+
+Click the **Deploy to Cloudflare** button above. Cloudflare will use `wrangler.jsonc` to guide Worker, D1, and Cron provisioning.
+
+After deployment, initialize the database:
+
+```text
+https://your-worker-url/api/init-db
+```
+
+Then open:
+
+```text
+https://your-worker-url/login
+```
+
+For production use, set these Worker Variables and Secrets:
+
+```text
+USERNAME
+PASSWORD
+JWT_SECRET
+```
+
+### Option 2: Local Wrangler Deploy
 
 Install dependencies:
 

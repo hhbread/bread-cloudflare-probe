@@ -1,5 +1,7 @@
 # 面包探针
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/hhbread/bread-cloudflare-probe)
+
 **Bread Cloudflare Probe** 是一个 Cloudflare 原生服务器探针项目。
 
 它把监控面板部署在 Cloudflare Workers 上，使用 Cloudflare D1 存储数据，服务器通过轻量 Agent 定时上报状态。目标是做一个比传统自建面板更轻、更容易部署、更适合小团队和个人服务器管理的探针系统。
@@ -28,6 +30,32 @@ DEPLOYMENT_NOTES.md    部署和踩坑记录
 ```
 
 ## 半自动部署
+
+### 方式一：Deploy to Cloudflare
+
+点击 README 顶部的 **Deploy to Cloudflare** 按钮，Cloudflare 会根据仓库里的 `wrangler.jsonc` 引导部署 Worker、D1 和 Cron。
+
+部署完成后，建议访问一次：
+
+```text
+https://你的-worker-url/api/init-db
+```
+
+初始化数据库后，再访问：
+
+```text
+https://你的-worker-url/login
+```
+
+如果你没有在部署过程中设置环境变量，首次登录可能会使用项目默认账号。建议部署后尽快在 Cloudflare Worker 的 Variables and Secrets 中设置：
+
+```text
+USERNAME
+PASSWORD
+JWT_SECRET
+```
+
+### 方式二：本地 Wrangler 部署
 
 ### 1. 准备环境
 
