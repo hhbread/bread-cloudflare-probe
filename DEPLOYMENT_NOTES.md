@@ -16,7 +16,7 @@
 测试 Worker 地址：
 
 ```text
-https://cloudflare-vps-monitor.hackbread.workers.dev
+https://your-worker-url
 ```
 
 测试 VPS：
@@ -156,7 +156,7 @@ Active: active (running)
 测试机器上安装到 crontab 备用自启动阶段时报错：
 
 ```text
-./cf-vps-monitor.sh: line 2503: USER: unbound variable
+旧版 Agent 安装脚本在 crontab 备用自启动阶段出现过 `$USER` 未定义错误。
 ```
 
 原因：
@@ -191,7 +191,7 @@ bread-probe-agent.sh
 GitHub Raw 地址: https://raw.githubusercontent.com/hhbread/bread-cloudflare-probe/main/bread-probe-agent.sh
 ```
 
-面板中的“复制脚本”按钮会生成新版安装命令。旧的 `cf-vps-monitor.sh` 暂时保留，用于旧 Agent 卸载和兼容回滚。
+面板中的“复制脚本”按钮会生成新版安装命令。仓库不再上传旧版安装脚本，避免新项目部署链路混乱。
 
 ### 面包探针 UI 基础版
 

@@ -1,4 +1,4 @@
-﻿// 面包探针 - Cloudflare Worker解决方案
+// 面包探针 - Cloudflare Worker解决方案
 // 版本: 1.1.0
 // ==================== 配置常量 ====================
 
@@ -900,9 +900,7 @@ const D1_SCHEMAS = {
       value TEXT
     );
     INSERT OR IGNORE INTO app_config (key, value) VALUES ('vps_report_interval_seconds', '60');
-    INSERT OR IGNORE INTO app_config (key, value) VALUES ('custom_background_enabled', 'false');
-    INSERT OR IGNORE INTO app_config (key, value) VALUES ('custom_background_url', '');
-    INSERT OR IGNORE INTO app_config (key, value) VALUES ('page_opacity', '80');`
+`
 };
 
 // ==================== 数据库初始化 ====================
@@ -1732,7 +1730,6 @@ async function handleApiRequest(request, env, ctx) {
   }
 
 
-
   // VPS监控路由
   if (path.startsWith('/api/config/') || path.startsWith('/api/report/') ||
       path.startsWith('/api/status/') || path.startsWith('/api/notify/')) {
@@ -1756,30 +1753,6 @@ async function handleApiRequest(request, env, ctx) {
       );
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   // ==================== 高级排序功能 ====================
@@ -2053,7 +2026,6 @@ async function handleApiRequest(request, env, ctx) {
   }
 
 
-
   // ==================== 网站监控API ====================
 
   // 获取监控站点列表（管理员）
@@ -2200,7 +2172,6 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
   }
-
 
 
   // 更新监控站点（管理员）
@@ -2951,140 +2922,6 @@ async function handleApiRequest(request, env, ctx) {
     }
   }
 
-  if (path === '/api/background-settings' && method === 'GET') {
-    try {
-      // 查询三个背景配置项
-      const { results } = await env.DB.prepare(`
-        SELECT key, value FROM app_config
-        WHERE key IN ('custom_background_enabled', 'custom_background_url', 'page_opacity')
-      `).all();
-
-      // 转换为对象格式
-      const settings = {
-        enabled: false,
-        url: '',
-        opacity: 80
-      };
-
-      results.forEach(row => {
-        switch (row.key) {
-          case 'custom_background_enabled':
-            settings.enabled = row.value === 'true';
-            break;
-          case 'custom_background_url':
-            settings.url = row.value || '';
-            break;
-          case 'page_opacity':
-            settings.opacity = parseInt(row.value, 10) || 80;
-            break;
-        }
-      });
-
-      return new Response(JSON.stringify(settings), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    } catch (error) {
-            return new Response(JSON.stringify({
-        enabled: false,
-        url: '',
-        opacity: 80
-      }), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
-  }
-
-
-
-  // 设置背景配置（管理员）
-  if (path === '/api/admin/background-settings' && method === 'POST') {
-    const user = await authenticateRequest(request, env);
-    if (!user) {
-      return new Response(JSON.stringify({
-        error: 'Unauthorized',
-        message: '需要管理员权限'
-      }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
-
-    try {
-      const { enabled, url, opacity } = await request.json();
-
-      // 验证输入参数
-      if (typeof enabled !== 'boolean') {
-        return new Response(JSON.stringify({
-          error: 'Invalid enabled value',
-          message: 'enabled必须是布尔值'
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
-      }
-
-      if (enabled && url) {
-        if (typeof url !== 'string' || !url.startsWith('https://')) {
-          return new Response(JSON.stringify({
-            error: 'Invalid URL format',
-            message: '背景图片URL必须以https://开头'
-          }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders }
-          });
-        }
-      }
-
-      if (typeof opacity !== 'number' || opacity < 0 || opacity > 100) {
-        return new Response(JSON.stringify({
-          error: 'Invalid opacity value',
-          message: '透明度必须是0-100之间的数字'
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
-      }
-
-      // 更新配置到数据库
-      await env.DB.batch([
-        env.DB.prepare('REPLACE INTO app_config (key, value) VALUES (?, ?)').bind(
-          'custom_background_enabled',
-          enabled.toString()
-        ),
-        env.DB.prepare('REPLACE INTO app_config (key, value) VALUES (?, ?)').bind(
-          'custom_background_url',
-          url || ''
-        ),
-        env.DB.prepare('REPLACE INTO app_config (key, value) VALUES (?, ?)').bind(
-          'page_opacity',
-          opacity.toString()
-        )
-      ]);
-
-      // 清除监控设置缓存（背景设置也在app_config表中）
-      configCache.clearKey('monitoring_settings');
-
-      return new Response(JSON.stringify({
-        success: true,
-        settings: { enabled, url: url || '', opacity }
-      }), {
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    } catch (error) {
-            return new Response(JSON.stringify({
-        error: 'Internal server error',
-        message: error.message
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders }
-      });
-    }
-  }
-
-
-
-
-  // 获取监控站点24小时历史状态（公开）
   if (path.match(/\/api\/sites\/[^\/]+\/history$/) && method === 'GET') {
     try {
       const siteId = path.split('/')[3];
@@ -3955,7 +3792,7 @@ function getIndexHtml() {
         }
         .server-details-row td {
             padding: 1rem;
-            background-color: rgba(248, 249, 250, var(--page-opacity, 0.8)); /* Light background for details with transparency */
+            background-color: rgba(248, 249, 250, 0.8); /* Light background for details with transparency */
         }
         .server-details-content {
             display: grid;
@@ -3963,7 +3800,7 @@ function getIndexHtml() {
             gap: 1rem;
         }
         .detail-item {
-            background-color: rgba(233, 236, 239, var(--page-opacity, 0.8));
+            background-color: rgba(233, 236, 239, 0.8);
             padding: 0.75rem;
             border-radius: 0.25rem;
             border: 1px solid rgba(0, 0, 0, 0.1);
@@ -3971,7 +3808,7 @@ function getIndexHtml() {
 
         /* 暗色主题下的详细信息项 */
         [data-bs-theme="dark"] .detail-item {
-            background-color: rgba(52, 58, 64, var(--page-opacity, 0.8));
+            background-color: rgba(52, 58, 64, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #e0e0e0;
         }
@@ -4110,11 +3947,11 @@ function getIndexHtml() {
             color: #ffffff; /* Ensure text in hovered rows is white */
         }
         [data-bs-theme="dark"] .server-details-row td {
-            background-color: rgba(33, 37, 41, var(--page-opacity, 0.8)); /* Darker details background with transparency */
+            background-color: rgba(33, 37, 41, 0.8); /* Darker details background with transparency */
             border-top: 1px solid #495057;
         }
         [data-bs-theme="dark"] .detail-item {
-            background-color: rgba(52, 58, 64, var(--page-opacity, 0.8)); /* Darker detail item background with transparency */
+            background-color: rgba(52, 58, 64, 0.8); /* Darker detail item background with transparency */
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #e0e0e0; /* Consistent text color */
         }
@@ -4425,12 +4262,12 @@ function getLoginHtml() {
         }
         .server-details-row td {
             padding: 1rem;
-            background-color: rgba(248, 249, 250, var(--page-opacity, 0.8)); /* Light background for details with transparency */
+            background-color: rgba(248, 249, 250, 0.8); /* Light background for details with transparency */
         }
 
         /* 暗色主题下的服务器详细信息行 */
         [data-bs-theme="dark"] .server-details-row td {
-            background-color: rgba(33, 37, 41, var(--page-opacity, 0.8));
+            background-color: rgba(33, 37, 41, 0.8);
         }
         .server-details-content {
             display: grid;
@@ -4438,7 +4275,7 @@ function getLoginHtml() {
             gap: 1rem;
         }
         .detail-item {
-            background-color: rgba(233, 236, 239, var(--page-opacity, 0.8));
+            background-color: rgba(233, 236, 239, 0.8);
             padding: 0.75rem;
             border-radius: 0.25rem;
             border: 1px solid rgba(0, 0, 0, 0.1);
@@ -4446,7 +4283,7 @@ function getLoginHtml() {
 
         /* 暗色主题下的详细信息项 */
         [data-bs-theme="dark"] .detail-item {
-            background-color: rgba(52, 58, 64, var(--page-opacity, 0.8));
+            background-color: rgba(52, 58, 64, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #e0e0e0;
         }
@@ -4514,11 +4351,11 @@ function getLoginHtml() {
             color: #ffffff; /* Ensure text in hovered rows is white */
         }
         [data-bs-theme="dark"] .server-details-row td {
-            background-color: rgba(33, 37, 41, var(--page-opacity, 0.8)); /* Darker details background with transparency */
+            background-color: rgba(33, 37, 41, 0.8); /* Darker details background with transparency */
             border-top: 1px solid #495057;
         }
         [data-bs-theme="dark"] .detail-item {
-            background-color: rgba(52, 58, 64, var(--page-opacity, 0.8)); /* Darker detail item background with transparency */
+            background-color: rgba(52, 58, 64, 0.8); /* Darker detail item background with transparency */
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: #e0e0e0; /* Consistent text color */
         }
@@ -4817,7 +4654,6 @@ function getAdminHtml() {
                     </div>
 
 
-
                     <!-- 桌面端表格视图 -->
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
@@ -4932,7 +4768,6 @@ function getAdminHtml() {
                     <h5 class="card-title mb-3">
                         <i class="bi bi-telegram me-2"></i>Telegram 通知设置
                     </h5>
-
 
 
                     <form id="telegramSettingsForm">
@@ -5769,7 +5604,6 @@ body {
 }
 
 
-
 /* 移动端进度条优化 */
 @media (max-width: 768px) {
     .progress {
@@ -5822,7 +5656,6 @@ body {
     color: var(--bs-secondary-color, #6c757d);
     margin-bottom: 0.25rem;
 }
-
 
 
 /* 移动端按钮优化 */
@@ -5879,7 +5712,6 @@ body {
     .admin-actions-group .dropdown-toggle {
         min-width: auto;
     }
-
 
 
     /* 移动端卡片间距优化 */
@@ -6048,7 +5880,6 @@ body {
         .mobile-card-value {
             color: #ffffff !important;
         }
-
 
 
         .mobile-card-row {
@@ -6267,371 +6098,6 @@ body {
 
 /* ==================== 自定义背景和透明度控制系统 ==================== */
 
-/* CSS变量定义 */
-:root {
-    --custom-background-url: '';
-    --page-opacity: 0.8;
-    --text-contrast-light: rgba(0, 0, 0, 0.87);
-    --text-contrast-dark: rgba(255, 255, 255, 0.87);
-    --background-overlay-light: rgba(255, 255, 255, 0.9);
-    --background-overlay-dark: rgba(18, 18, 18, 0.9);
-}
-
-/* 背景图片显示 */
-body.custom-background-enabled::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: var(--custom-background-url);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    z-index: -1;
-    opacity: 1;
-}
-
-/* 启用自定义背景时的页面元素透明度调整 */
-body.custom-background-enabled .navbar {
-    background-color: rgba(248, 249, 250, var(--page-opacity)) !important;
-    /* 移除导航栏的backdrop-filter，避免影响下拉菜单层级 */
-    /* backdrop-filter: blur(10px); */
-    /* -webkit-backdrop-filter: blur(10px); */
-}
-
-body.custom-background-enabled .card {
-    background-color: rgba(255, 255, 255, var(--page-opacity)) !important;
-    /* 移除大卡片的backdrop-filter，避免创建层叠上下文影响下拉菜单 */
-    /* backdrop-filter: blur(5px); */
-    /* -webkit-backdrop-filter: blur(5px); */
-    border: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-body.custom-background-enabled .card-header {
-    background-color: rgba(0, 0, 0, calc(0.03 * var(--page-opacity))) !important;
-    border-bottom: 1px solid rgba(0, 0, 0, calc(0.125 * var(--page-opacity)));
-}
-
-body.custom-background-enabled .modal-content {
-    background-color: rgba(255, 255, 255, var(--page-opacity)) !important;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-}
-
-body.custom-background-enabled .footer {
-    background-color: rgba(248, 249, 250, var(--page-opacity)) !important;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-}
-
-/* 表格透明度调整 - 避免与卡片背景叠加 */
-body.custom-background-enabled .table {
-    background-color: transparent !important;
-}
-
-body.custom-background-enabled .table th {
-    background-color: transparent !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-
-body.custom-background-enabled .table td {
-    background-color: transparent !important;
-}
-
-/* 输入框完全透明化 - 方案A */
-body.custom-background-enabled .form-control {
-    background-color: transparent !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border: 1px solid rgba(0, 0, 0, 0.15) !important;
-}
-
-body.custom-background-enabled .form-control:focus {
-    background-color: transparent !important;
-    border: 1px solid rgba(13, 110, 253, 0.6) !important;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important;
-}
-
-/* 按钮透明度调整 */
-body.custom-background-enabled .btn {
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-}
-
-/* 滑块完全透明化 - 完整重置 */
-body.custom-background-enabled .form-range {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    background: transparent !important;
-    outline: none !important;
-}
-
-/* WebKit浏览器 (Chrome, Safari) */
-body.custom-background-enabled .form-range::-webkit-slider-track {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    background: transparent !important;
-    border: 1px solid rgba(0, 0, 0, 0.15) !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-    box-shadow: none !important;
-    outline: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-}
-
-body.custom-background-enabled .form-range::-webkit-slider-runnable-track {
-    -webkit-appearance: none !important;
-    background: transparent !important;
-    border: 1px solid rgba(0, 0, 0, 0.15) !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-    box-shadow: none !important;
-}
-
-/* Firefox */
-body.custom-background-enabled .form-range::-moz-range-track {
-    background: transparent !important;
-    border: 1px solid rgba(0, 0, 0, 0.15) !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-body.custom-background-enabled .form-range::-moz-range-progress {
-    background: transparent !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-}
-
-/* 滑块按钮 - 垂直居中对齐 */
-body.custom-background-enabled .form-range::-webkit-slider-thumb {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    background-color: rgba(13, 110, 253, 0.8) !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    width: 20px !important;
-    height: 20px !important;
-    border-radius: 50% !important;
-    cursor: pointer !important;
-    margin-top: -7px !important;
-    box-sizing: border-box !important;
-}
-
-body.custom-background-enabled .form-range::-moz-range-thumb {
-    background-color: rgba(13, 110, 253, 0.8) !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    width: 20px !important;
-    height: 20px !important;
-    border-radius: 50% !important;
-    cursor: pointer !important;
-    box-shadow: none !important;
-    margin-top: -8px !important;
-    box-sizing: border-box !important;
-}
-
-/* 下拉菜单透明度调整 - 确保最高层级显示 */
-body.custom-background-enabled .dropdown-menu {
-    background-color: rgba(255, 255, 255, var(--page-opacity)) !important;
-    /* 移除backdrop-filter避免创建层叠上下文，确保z-index正常工作 */
-    /* backdrop-filter: blur(5px); */
-    /* -webkit-backdrop-filter: blur(5px); */
-}
-
-/* 移动端卡片透明度调整 - 移除backdrop-filter避免创建层叠上下文 */
-body.custom-background-enabled .mobile-server-card,
-body.custom-background-enabled .mobile-site-card {
-    background-color: rgba(255, 255, 255, var(--page-opacity)) !important;
-    /* backdrop-filter: blur(5px); 注释掉以避免创建层叠上下文遮挡下拉菜单 */
-    /* -webkit-backdrop-filter: blur(5px); */
-}
-
-body.custom-background-enabled .mobile-card-header {
-    background-color: rgba(0, 0, 0, calc(0.03 * var(--page-opacity))) !important;
-}
-
-/* 表格条纹和悬停效果 - 轻微背景色，不叠加透明度 */
-body.custom-background-enabled .table-striped > tbody > tr:nth-of-type(odd) > * {
-    background-color: rgba(0, 0, 0, 0.02) !important;
-}
-
-body.custom-background-enabled .table-hover > tbody > tr:hover > * {
-    background-color: rgba(0, 0, 0, 0.04) !important;
-}
-
-/* 暗色主题下的自定义背景样式 */
-[data-bs-theme="dark"] body.custom-background-enabled .navbar {
-    background-color: rgba(30, 30, 30, var(--page-opacity)) !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .card {
-    background-color: rgba(30, 30, 30, var(--page-opacity)) !important;
-    border-color: rgba(51, 51, 51, var(--page-opacity));
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .card-header {
-    background-color: rgba(42, 42, 42, var(--page-opacity)) !important;
-    border-bottom-color: rgba(51, 51, 51, var(--page-opacity));
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .modal-content {
-    background-color: rgba(30, 30, 30, var(--page-opacity)) !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .footer {
-    background-color: rgba(30, 30, 30, var(--page-opacity)) !important;
-}
-
-/* 暗色主题下的表格透明度调整 - 避免与卡片背景叠加 */
-[data-bs-theme="dark"] body.custom-background-enabled .table {
-    background-color: transparent !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .table th {
-    background-color: transparent !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .table td {
-    background-color: transparent !important;
-}
-
-/* 暗色主题下的输入框完全透明化 - 方案A */
-[data-bs-theme="dark"] body.custom-background-enabled .form-control {
-    background-color: transparent !important;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    color: rgba(255, 255, 255, 0.9) !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .form-control:focus {
-    background-color: transparent !important;
-    border: 1px solid rgba(13, 110, 253, 0.6) !important;
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15) !important;
-}
-
-/* 暗色主题下的下拉菜单透明度调整 - 移除backdrop-filter */
-[data-bs-theme="dark"] body.custom-background-enabled .dropdown-menu {
-    background-color: rgba(30, 30, 30, var(--page-opacity)) !important;
-    /* 移除backdrop-filter避免创建层叠上下文，确保z-index正常工作 */
-    /* backdrop-filter: blur(5px); */
-    /* -webkit-backdrop-filter: blur(5px); */
-}
-
-/* 暗色主题下的滑块完全透明化 - 完整重置 */
-[data-bs-theme="dark"] body.custom-background-enabled .form-range {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    background: transparent !important;
-    outline: none !important;
-}
-
-/* WebKit浏览器 (Chrome, Safari) - 暗色主题 */
-[data-bs-theme="dark"] body.custom-background-enabled .form-range::-webkit-slider-track {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .form-range::-webkit-slider-runnable-track {
-    -webkit-appearance: none !important;
-    background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-    box-shadow: none !important;
-}
-
-/* Firefox - 暗色主题 */
-[data-bs-theme="dark"] body.custom-background-enabled .form-range::-moz-range-track {
-    background: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-    box-shadow: none !important;
-    outline: none !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .form-range::-moz-range-progress {
-    background: transparent !important;
-    height: 6px !important;
-    border-radius: 3px !important;
-}
-
-/* 滑块按钮 - 暗色主题 - 垂直居中对齐 */
-[data-bs-theme="dark"] body.custom-background-enabled .form-range::-webkit-slider-thumb {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    background-color: rgba(13, 110, 253, 0.9) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    width: 20px !important;
-    height: 20px !important;
-    border-radius: 50% !important;
-    cursor: pointer !important;
-    margin-top: -7px !important;
-    box-sizing: border-box !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .form-range::-moz-range-thumb {
-    background-color: rgba(13, 110, 253, 0.9) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    width: 20px !important;
-    height: 20px !important;
-    border-radius: 50% !important;
-    cursor: pointer !important;
-    box-shadow: none !important;
-    margin-top: -8px !important;
-    box-sizing: border-box !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .mobile-server-card,
-[data-bs-theme="dark"] body.custom-background-enabled .mobile-site-card {
-    background-color: rgba(33, 37, 41, var(--page-opacity)) !important;
-    border-color: rgba(73, 80, 87, var(--page-opacity));
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .mobile-card-header {
-    background-color: rgba(255, 255, 255, calc(0.05 * var(--page-opacity))) !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .table-striped > tbody > tr:nth-of-type(odd) > * {
-    background-color: rgba(255, 255, 255, 0.03) !important;
-}
-
-[data-bs-theme="dark"] body.custom-background-enabled .table-hover > tbody > tr:hover > * {
-    background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-
-
-
-
-/* 警告框透明度调整 */
-body.custom-background-enabled #serverAlert,
-body.custom-background-enabled #siteAlert,
-body.custom-background-enabled #telegramSettingsAlert,
-body.custom-background-enabled #backgroundSettingsAlert {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
-}
-
-/* ==================== 文字描边渲染系统 ==================== */
-
-/* 文字加粗系统 - 精简版 */
 p, div, span:not(.badge), td, th, .btn, button, a:not(.navbar-brand),
 .form-control, .form-select, .form-check-label, input, textarea,
 .card-header, .card-title, .card-body, .modal-content, .modal-title, .dropdown-menu,
@@ -6677,34 +6143,34 @@ p, div, span:not(.badge), td, th, .btn, button, a:not(.navbar-brand),
 
 .unified-toast.success {
     background: linear-gradient(135deg,
-        rgba(34, 197, 94, calc(0.7 * var(--page-opacity, 0.8))),
-        rgba(22, 163, 74, calc(0.7 * var(--page-opacity, 0.8))));
+        rgba(34, 197, 94, calc(0.7 * 0.8)),
+        rgba(22, 163, 74, calc(0.7 * 0.8)));
     color: white;
-    border-color: rgba(34, 197, 94, calc(0.4 * var(--page-opacity, 0.8)));
+    border-color: rgba(34, 197, 94, calc(0.4 * 0.8));
 }
 
 .unified-toast.danger {
     background: linear-gradient(135deg,
-        rgba(239, 68, 68, calc(0.7 * var(--page-opacity, 0.8))),
-        rgba(220, 38, 38, calc(0.7 * var(--page-opacity, 0.8))));
+        rgba(239, 68, 68, calc(0.7 * 0.8)),
+        rgba(220, 38, 38, calc(0.7 * 0.8)));
     color: white;
-    border-color: rgba(239, 68, 68, calc(0.4 * var(--page-opacity, 0.8)));
+    border-color: rgba(239, 68, 68, calc(0.4 * 0.8));
 }
 
 .unified-toast.warning {
     background: linear-gradient(135deg,
-        rgba(245, 158, 11, calc(0.7 * var(--page-opacity, 0.8))),
-        rgba(217, 119, 6, calc(0.7 * var(--page-opacity, 0.8))));
+        rgba(245, 158, 11, calc(0.7 * 0.8)),
+        rgba(217, 119, 6, calc(0.7 * 0.8)));
     color: white;
-    border-color: rgba(245, 158, 11, calc(0.4 * var(--page-opacity, 0.8)));
+    border-color: rgba(245, 158, 11, calc(0.4 * 0.8));
 }
 
 .unified-toast.info {
     background: linear-gradient(135deg,
-        rgba(59, 130, 246, calc(0.7 * var(--page-opacity, 0.8))),
-        rgba(37, 99, 235, calc(0.7 * var(--page-opacity, 0.8))));
+        rgba(59, 130, 246, calc(0.7 * 0.8)),
+        rgba(37, 99, 235, calc(0.7 * 0.8)));
     color: white;
-    border-color: rgba(59, 130, 246, calc(0.4 * var(--page-opacity, 0.8)));
+    border-color: rgba(59, 130, 246, calc(0.4 * 0.8));
 }
 
 .toast-icon {
@@ -6824,12 +6290,6 @@ body::before {
         linear-gradient(90deg, rgba(8, 167, 201, 0.035) 1px, transparent 1px);
     background-size: 38px 38px;
     mask-image: linear-gradient(to bottom, rgba(0,0,0,0.88), rgba(0,0,0,0.12));
-}
-
-body.custom-background-enabled::before {
-    background-image:
-        linear-gradient(rgba(101, 87, 255, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(8, 167, 201, 0.035) 1px, transparent 1px) !important;
 }
 
 .navbar {
@@ -7825,9 +7285,6 @@ function renderMobileSiteCards(sites) {
 }
 
 
-
-
-
 // Render the server table using DOM manipulation
 function renderServerTable(allStatuses) {
     const tableBody = document.getElementById('serverTableBody');
@@ -8111,118 +7568,6 @@ function getSiteStatusBadge(status) {
 
 // ==================== 全局背景设置功能 ====================
 
-// 全局背景设置加载函数
-async function loadGlobalBackgroundSettings() {
-    try {
-        // 检查localStorage缓存（无痕模式兼容）
-        const cacheKey = 'background-settings-cache';
-        let cached = null;
-        let settings = null;
-
-        try {
-            cached = localStorage.getItem(cacheKey);
-        } catch (storageError) {
-                    }
-
-        if (cached) {
-            try {
-                const cachedData = JSON.parse(cached);
-                const now = Date.now();
-                const cacheAge = now - cachedData.timestamp;
-                const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
-
-                if (cacheAge < CACHE_DURATION) {
-                    settings = cachedData;
-                                    }
-            } catch (parseError) {
-                            }
-        }
-
-        // 缓存过期或不存在，从API获取
-        if (!settings) {
-            try {
-                const response = await fetch('/api/background-settings');
-                if (response.ok) {
-                    const apiSettings = await response.json();
-                    settings = {
-                        enabled: apiSettings.enabled,
-                        url: apiSettings.url,
-                        opacity: apiSettings.opacity,
-                        timestamp: Date.now()
-                    };
-
-                    // 尝试更新缓存（无痕模式可能失败，但不影响功能）
-                    try {
-                        localStorage.setItem(cacheKey, JSON.stringify(settings));
-                                            } catch (storageError) {
-                                            }
-                } else {
-                                        settings = { enabled: false, url: '', opacity: 80 };
-                }
-            } catch (error) {
-                                settings = { enabled: false, url: '', opacity: 80 };
-            }
-        }
-
-        // 应用背景设置
-        applyGlobalBackgroundSettings(settings.enabled, settings.url, settings.opacity);
-
-    } catch (error) {
-            }
-}
-
-// 应用全局背景设置
-function applyGlobalBackgroundSettings(enabled, url, opacity) {
-    const body = document.body;
-
-    if (enabled && url) {
-        // 验证URL格式
-        if (!url.startsWith('https://')) {
-                        return;
-        }
-
-        // 预加载图片，确保加载成功
-        const img = new Image();
-        img.onload = function() {
-            // 图片加载成功，应用背景
-            body.style.setProperty('--custom-background-url', \`url(\${url})\`);
-            body.style.setProperty('--page-opacity', opacity / 100);
-            body.classList.add('custom-background-enabled');
-
-
-
-                    };
-        img.onerror = function() {
-            // 图片加载失败，不应用背景
-            body.classList.remove('custom-background-enabled');
-            body.classList.remove('low-contrast', 'medium-contrast', 'high-contrast');
-        };
-        img.src = url;
-    } else {
-        // 移除背景设置
-        body.style.removeProperty('--custom-background-url');
-        body.style.removeProperty('--page-opacity');
-        body.classList.remove('custom-background-enabled');
-            }
-}
-
-
-
-// 页面加载时初始化背景设置
-document.addEventListener('DOMContentLoaded', function() {
-    loadGlobalBackgroundSettings();
-});
-
-// 监听storage事件，实现跨页面设置同步
-window.addEventListener('storage', function(e) {
-    if (e.key === 'background-settings-cache' && e.newValue) {
-        try {
-            const newSettings = JSON.parse(e.newValue);
-            applyGlobalBackgroundSettings(newSettings.enabled, newSettings.url, newSettings.opacity);
-                    } catch (error) {
-                    }
-    }
-});
 `;
 }
 
@@ -8417,120 +7762,8 @@ async function login(username, password) {
 }
 
 
-
 // ==================== 全局背景设置功能 ====================
 
-// 全局背景设置加载函数（登录页面版本）
-async function loadGlobalBackgroundSettings() {
-    try {
-        // 检查localStorage缓存（无痕模式兼容）
-        const cacheKey = 'background-settings-cache';
-        let cached = null;
-        let settings = null;
-
-        try {
-            cached = localStorage.getItem(cacheKey);
-        } catch (storageError) {
-                    }
-
-        if (cached) {
-            try {
-                const cachedData = JSON.parse(cached);
-                const now = Date.now();
-                const cacheAge = now - cachedData.timestamp;
-                const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
-
-                if (cacheAge < CACHE_DURATION) {
-                    settings = cachedData;
-                                    }
-            } catch (parseError) {
-                            }
-        }
-
-        // 缓存过期或不存在，从API获取
-        if (!settings) {
-            try {
-                const response = await fetch('/api/background-settings');
-                if (response.ok) {
-                    const apiSettings = await response.json();
-                    settings = {
-                        enabled: apiSettings.enabled,
-                        url: apiSettings.url,
-                        opacity: apiSettings.opacity,
-                        timestamp: Date.now()
-                    };
-
-                    // 尝试更新缓存（无痕模式可能失败，但不影响功能）
-                    try {
-                        localStorage.setItem(cacheKey, JSON.stringify(settings));
-                                            } catch (storageError) {
-                                            }
-                } else {
-                                        settings = { enabled: false, url: '', opacity: 80 };
-                }
-            } catch (error) {
-                                settings = { enabled: false, url: '', opacity: 80 };
-            }
-        }
-
-        // 应用背景设置
-        applyGlobalBackgroundSettings(settings.enabled, settings.url, settings.opacity);
-
-    } catch (error) {
-            }
-}
-
-// 应用全局背景设置
-function applyGlobalBackgroundSettings(enabled, url, opacity) {
-    const body = document.body;
-
-    if (enabled && url) {
-        // 验证URL格式
-        if (!url.startsWith('https://')) {
-                        return;
-        }
-
-        // 预加载图片，确保加载成功
-        const img = new Image();
-        img.onload = function() {
-            // 图片加载成功，应用背景
-            body.style.setProperty('--custom-background-url', \`url(\${url})\`);
-            body.style.setProperty('--page-opacity', opacity / 100);
-            body.classList.add('custom-background-enabled');
-
-
-
-                    };
-        img.onerror = function() {
-            // 图片加载失败，不应用背景
-            body.classList.remove('custom-background-enabled');
-        };
-        img.src = url;
-    } else {
-        // 移除背景设置
-        body.style.removeProperty('--custom-background-url');
-        body.style.removeProperty('--page-opacity');
-        body.classList.remove('custom-background-enabled');
-            }
-}
-
-
-
-// 页面加载时初始化背景设置
-document.addEventListener('DOMContentLoaded', function() {
-    loadGlobalBackgroundSettings();
-});
-
-// 监听storage事件，实现跨页面设置同步
-window.addEventListener('storage', function(e) {
-    if (e.key === 'background-settings-cache' && e.newValue) {
-        try {
-            const newSettings = JSON.parse(e.newValue);
-            applyGlobalBackgroundSettings(newSettings.enabled, newSettings.url, newSettings.opacity);
-                    } catch (error) {
-                    }
-    }
-});
 `;
 }
 // Helper functions for updating server/site settings are no longer needed for frequent notifications
@@ -8695,8 +7928,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 加载Telegram设置
     loadTelegramSettings();
     loadNotificationChannels();
-    // 加载背景设置
-    loadBackgroundSettings();
     // 加载全局设置 (VPS Report Interval) - will use serverAlert for notifications
     loadGlobalSettings();
 
@@ -10106,9 +9337,6 @@ function hideToast(toast) {
 }
 
 
-
-
-
 // --- Telegram Settings Functions ---
 
 // 加载Telegram通知设置
@@ -10307,40 +9535,6 @@ async function deleteNotificationChannel(channelId) {
         showToast('danger', '删除 Webhook 通知通道失败: ' + error.message);
     }
 }
-
-// --- Background Settings Functions ---
-
-// 加载背景设置
-async function loadBackgroundSettings() {
-    applyBackgroundSettings(false, '', 100, false);
-}
-
-// 保存背景设置
-async function saveBackgroundSettings() {
-    applyBackgroundSettings(false, '', 100, true);
-    showToast('info', '自定义背景设置已移除，面包探针现在使用固定科技主题');
-}
-
-// 应用背景设置
-function applyBackgroundSettings(enabled, url, opacity, saveToCache = false) {
-    const body = document.body;
-    body.style.removeProperty('--custom-background-url');
-    body.style.removeProperty('--page-opacity');
-    body.classList.remove('custom-background-enabled');
-
-    // 缓存设置到localStorage（可选）
-    if (saveToCache) {
-        const settings = { enabled: false, url: '', opacity: 100, timestamp: Date.now() };
-        localStorage.setItem('background-settings-cache', JSON.stringify(settings));
-    }
-}
-
-// 实时预览透明度变化
-function updateOpacityPreview() {
-    applyBackgroundSettings(false, '', 100, false);
-}
-
-
 
 // --- Global Settings Functions (VPS Report Interval) ---
 async function loadGlobalSettings() {
@@ -10546,7 +9740,6 @@ function renderMobileAdminServerCards(servers) {
         }
 
 
-
         // 四个按钮 - 两行两列布局
         const buttonsContainer = document.createElement('div');
         buttonsContainer.className = 'mobile-card-buttons-grid';
@@ -10713,7 +9906,6 @@ function renderMobileAdminSiteCards(sites) {
         cardBody.appendChild(urlRow);
 
 
-
         // 最后检查 - 单行
         const lastCheckRow = document.createElement('div');
         lastCheckRow.className = 'mobile-card-row';
@@ -10801,40 +9993,5 @@ function showServerApiKey(serverId) {
 
 // ==================== 全局背景设置同步功能 ====================
 
-// 监听storage事件，实现跨页面设置同步
-window.addEventListener('storage', function(e) {
-    if (e.key === 'background-settings-cache' && e.newValue) {
-        try {
-            const newSettings = JSON.parse(e.newValue);
-            // 使用管理页面的背景设置应用函数
-            applyBackgroundSettings(newSettings.enabled, newSettings.url, newSettings.opacity, false);
-                    } catch (error) {
-                    }
-    }
-});
-
-// 页面加载时也检查并应用缓存的背景设置
-document.addEventListener('DOMContentLoaded', function() {
-    // 延迟执行，确保loadBackgroundSettings()先执行
-    setTimeout(function() {
-        const cached = localStorage.getItem('background-settings-cache');
-        if (cached) {
-            try {
-                const cachedData = JSON.parse(cached);
-                const now = Date.now();
-                const cacheAge = now - cachedData.timestamp;
-                const CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
-
-                if (cacheAge < CACHE_DURATION) {
-                    // 缓存有效，确保设置已应用
-                    applyBackgroundSettings(cachedData.enabled, cachedData.url, cachedData.opacity, false);
-                                    }
-            } catch (error) {
-                            }
-        }
-    }, 100);
-});
 `;
 }
-
-

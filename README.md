@@ -22,7 +22,6 @@
 ```text
 worker.js              Cloudflare Worker 主程序
 bread-probe-agent.sh   服务器 Agent 安装和管理脚本
-cf-vps-monitor.sh      原项目兼容脚本，保留用于旧版卸载和回滚
 scripts/               部署、初始化和辅助脚本
 wrangler.toml.example  Wrangler 配置模板
 package.json           npm 命令入口
@@ -119,14 +118,6 @@ chmod +x bread-probe-agent.sh
 
 ```bash
 ./bread-probe-agent.sh uninstall
-```
-
-旧版兼容卸载：
-
-```bash
-wget https://raw.githubusercontent.com/hhbread/bread-cloudflare-probe/main/cf-vps-monitor.sh -O cf-vps-monitor.sh
-chmod +x cf-vps-monitor.sh
-./cf-vps-monitor.sh uninstall
 ```
 
 ## 常用命令
